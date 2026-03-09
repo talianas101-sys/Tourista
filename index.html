@@ -2,6 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tourista">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#C4602A">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%23C4602A'/><text y='130' x='96' text-anchor='middle' font-size='110'>🧭</text></svg>">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Tourista — Casablanca</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -761,6 +768,15 @@ window.addEventListener('load', async()=>{
     loginUser({id:session.user.id,name:profile?.name||session.user.email.split('@')[0],email:session.user.email});
   }
 });
+</script>
+<script>
+if("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js")
+      .then(r => console.log("✅ Tourista PWA ready"))
+      .catch(e => console.log("SW error:", e));
+  });
+}
 </script>
 </body>
 </html>
