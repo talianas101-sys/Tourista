@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="Tourista">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#C4602A">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%23C4602A'/><text y='130' x='96' text-anchor='middle' font-size='110'>🧭</text></svg>">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Tourista — Casablanca</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -206,7 +206,7 @@ body{background:var(--ink);font-family:'Outfit',sans-serif;color:var(--ink);min-
   <div id="auth-screen" class="screen active">
     <div class="auth-bg"></div><div class="zellige"></div>
     <div class="auth-inner">
-      <div class="auth-logo-icon">🧭</div>
+      <div class="auth-logo-icon"><svg width="40" height="40" viewBox="0 0 50 50"><rect x="5" y="5" width="40" height="8" rx="4" fill="white"/><rect x="19" y="13" width="12" height="30" rx="4" fill="white"/><circle cx="38" cy="38" r="5" fill="#C9993A"/></svg></div>
       <div class="auth-name">Tourista</div>
       <div class="auth-tag">Discover the city</div>
       <div class="auth-loc">📍 Casablanca, Morocco &nbsp;·&nbsp; ☀️ 22°C</div>
@@ -241,7 +241,7 @@ body{background:var(--ink);font-family:'Outfit',sans-serif;color:var(--ink);min-
     <div id="tab-home" class="tab-content" style="display:flex;flex-direction:column;flex:1;overflow-y:auto;padding-bottom:80px">
       <div class="topbar">
         <div class="topbar-row">
-          <div class="topbar-logo">Tourista</div>
+          <div class="topbar-logo" style="display:flex;align-items:center;gap:8px"><svg width="24" height="24" viewBox="0 0 50 50"><rect x="5" y="5" width="40" height="8" rx="4" fill="white"/><rect x="19" y="13" width="12" height="30" rx="4" fill="white"/><circle cx="38" cy="38" r="5" fill="#C9993A"/></svg>Tourista</div>
           <div class="topbar-avatar" id="avatar-btn" onclick="confirmSignOut()">T</div>
         </div>
         <div class="topbar-greeting">
@@ -274,7 +274,7 @@ body{background:var(--ink);font-family:'Outfit',sans-serif;color:var(--ink);min-
     <!-- SAVED -->
     <div id="tab-saved" class="tab-content" style="display:none;flex-direction:column;flex:1;overflow-y:auto;padding-bottom:80px">
       <div class="topbar">
-        <div class="topbar-row"><div class="topbar-logo">Tourista</div></div>
+        <div class="topbar-row"><div class="topbar-logo" style="display:flex;align-items:center;gap:8px"><svg width="24" height="24" viewBox="0 0 50 50"><rect x="5" y="5" width="40" height="8" rx="4" fill="white"/><rect x="19" y="13" width="12" height="30" rx="4" fill="white"/><circle cx="38" cy="38" r="5" fill="#C9993A"/></svg>Tourista</div></div>
         <div class="topbar-greeting"><div class="topbar-small">❤️ Your saved places</div></div>
       </div>
       <div style="padding:20px">
@@ -286,7 +286,7 @@ body{background:var(--ink);font-family:'Outfit',sans-serif;color:var(--ink);min-
     <!-- PROFILE -->
     <div id="tab-profile" class="tab-content" style="display:none;flex-direction:column;flex:1;overflow-y:auto;padding-bottom:80px">
       <div class="topbar">
-        <div class="topbar-row"><div class="topbar-logo">Tourista</div></div>
+        <div class="topbar-row"><div class="topbar-logo" style="display:flex;align-items:center;gap:8px"><svg width="24" height="24" viewBox="0 0 50 50"><rect x="5" y="5" width="40" height="8" rx="4" fill="white"/><rect x="19" y="13" width="12" height="30" rx="4" fill="white"/><circle cx="38" cy="38" r="5" fill="#C9993A"/></svg>Tourista</div></div>
         <div class="topbar-greeting">
           <div class="topbar-small">👤 Profile</div>
           <div class="topbar-big"><em id="profile-name">Explorer</em></div>
