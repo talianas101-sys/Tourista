@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tourista">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#C4602A">
+<link rel="apple-touch-icon" href="icon-192.svg">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Tourista — Casablanca</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--clay:#C4602A;--clay-light:#E8845A;--clay-dark:#8B3A1A;--gold:#C9993A;--gold-light:#F0C96A;--ink:#1C1208;--sand:#F5EEE3;--sand-deep:#EAE0D0;--cream:#FDFAF5;--sage:#5B7A6A;--warm-grey:#8C7B6B;--border:rgba(196,96,42,0.15);--shadow:0 4px 24px rgba(28,18,8,0.08)}
+body{background:var(--ink);font-family:'Outfit',sans-serif;color:var(--ink);min-height:100vh;display:flex;justify-content:center}
+#app{width:100%;max-width:430px;min-height:100vh;background:var(--cream);position:relative;display:flex;flex-direction:column}
+::-webkit-scrollbar{width:0}
+.screen{display:none;flex-direction:column;flex:1;overflow-y:auto}
+.screen.active{display:flex}
+.screen::-webkit-scrollbar{display:none}
+
+/* TOAST */
+#toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--sand);padding:10px 20px;border-radius:30px;font-size:13px;opacity:0;pointer-events:none;transition:all 0.3s;z-index:999;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* AUTH */
+#auth-screen{background:var(--ink);min-height:100vh;position:relative;overflow:hidden}
+.auth-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 70% 30%,rgba(196,96,42,0.35),transparent 60%),radial-gradient(ellipse at 20% 80%,rgba(201,153,58,0.2),transparent 50%)}
+.zellige{position:absolute;inset:0;opacity:0.04;background-image:repeating-linear-gradient(45deg,var(--gold) 0,var(--gold) 1px,transparent 0,transparent 20px),repeating-linear-gradient(-45deg,var(--gold) 0,var(--gold) 1px,transparent 0,transparent 20px)}
+.auth-inner{position:relative;z-index:2;padding:60px 32px 40px;display:flex;flex-direction:column;min-height:100vh}
+.auth-logo-icon{width:72px;height:72px;background:linear-gradient(135deg,var(--clay),var(--gold));border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:0 20px 40px rgba(196,96,42,0.4);margin-bottom:20px}
+.auth-name{font-family:'Cormorant Garamond',serif;font-size:52px;font-weight:600;color:var(--sand);line-height:1}
+.auth-tag{color:rgba(245,238,227,0.45);font-size:14px;margin-top:6px;letter-spacing:3px;text-transform:uppercase}
+.auth-loc{color:var(--gold);font-size:13px;margin-top:16px}
+.auth-form{background:rgba(245,238,227,0.06);border:1px solid rgba(245,238,227,0.1);border-radius:24px;padding:28px 24px;margin-top:40px}
+.auth-tabs{display:flex;background:rgba(0,0,0,0.2);border-radius:12px;padding:4px;margin-bottom:24px}
+.auth-tab{flex:1;padding:8px;text-align:center;color:rgba(245,238,227,0.4);font-size:14px;cursor:pointer;border-radius:10px;transition:all 0.2s;font-weight:500}
+.auth-tab.active{background:var(--clay);color:white}
+.auth-field{margin-bottom:14px}
+.auth-field label{display:block;color:rgba(245,238,227,0.5);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+.auth-field input{width:100%;padding:12px 14px;background:rgba(0,0,0,0.2);border:1px solid rgba(245,238,227,0.1);border-radius:12px;color:var(--sand);font-size:14px;font-family:'Outfit',sans-serif;outline:none}
+.auth-field input:focus{border-color:var(--clay)}
+.auth-field input::placeholder{color:rgba(245,238,227,0.25)}
+.auth-err{background:rgba(196,96,42,0.2);border:1px solid rgba(196,96,42,0.3);border-radius:10px;padding:10px 14px;color:#FFB494;font-size:13px;margin-bottom:12px;display:none}
+.auth-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--clay),var(--clay-dark));color:white;border:none;border-radius:14px;font-size:15px;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer;margin-top:6px;box-shadow:0 8px 24px rgba(196,96,42,0.4)}
+.auth-guest{text-align:center;margin-top:16px;color:rgba(245,238,227,0.35);font-size:13px;cursor:pointer}
+.auth-guest span{color:var(--gold);text-decoration:underline}
+
+/* TOPBAR */
+.topbar{background:var(--ink);padding:16px 20px 20px;position:relative;overflow:hidden;flex-shrink:0}
+.topbar::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 80% 50%,rgba(196,96,42,0.3),transparent 65%)}
+.topbar-row{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:2}
+.topbar-logo{font-family:'Cormorant Garamond',serif;font-size:26px;color:var(--sand);font-weight:600}
+.topbar-avatar{width:34px;height:34px;background:linear-gradient(135deg,var(--clay),var(--gold));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;font-weight:600;color:white}
+.topbar-greeting{position:relative;z-index:2;margin-top:12px}
+.topbar-small{font-size:11px;color:var(--gold);letter-spacing:3px;text-transform:uppercase}
+.topbar-big{font-family:'Cormorant Garamond',serif;font-size:28px;color:var(--sand);line-height:1.1;margin-top:4px}
+.topbar-big em{font-style:italic;color:var(--clay-light)}
+
+/* SEARCH */
+.search-wrap{padding:16px 20px 0;flex-shrink:0}
+.search-row{display:flex;gap:10px}
+.search-box{flex:1;position:relative}
+.search-box input{width:100%;padding:12px 36px 12px 40px;background:white;border:2px solid var(--border);border-radius:14px;font-size:14px;font-family:'Outfit',sans-serif;outline:none;color:var(--ink);box-shadow:var(--shadow)}
+.search-box input:focus{border-color:var(--clay)}
+.search-box input::placeholder{color:var(--warm-grey)}
+.search-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:16px;opacity:0.5}
+.search-clear{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:14px;cursor:pointer;opacity:0.4;display:none}
+.filter-btn{width:46px;height:46px;background:var(--clay);color:white;border:none;border-radius:14px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(196,96,42,0.35);flex-shrink:0}
+
+/* CATS */
+.cats-wrap{padding:16px 0 0 20px;flex-shrink:0}
+.cats-scroll{display:flex;gap:10px;overflow-x:auto;padding-right:20px;padding-bottom:4px}
+.cats-scroll::-webkit-scrollbar{display:none}
+.cat-chip{display:flex;align-items:center;gap:6px;padding:8px 16px;background:white;border-radius:30px;border:2px solid var(--border);font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,0,0,0.04);flex-shrink:0}
+.cat-chip.active{background:var(--clay);color:white;border-color:var(--clay);box-shadow:0 4px 16px rgba(196,96,42,0.3)}
+
+/* SECTION */
+.section{padding:20px 20px 0}
+.sec-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+.sec-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600}
+.sec-count{font-size:12px;color:var(--clay);letter-spacing:1px;text-transform:uppercase;font-weight:500}
+
+/* SPONSORED PREMIUM */
+.card-premium{background:linear-gradient(135deg,#1C1208,#2D1A08);border-radius:18px;padding:16px;position:relative;overflow:hidden;cursor:pointer;border:1px solid rgba(201,153,58,0.2);margin-bottom:8px;transition:transform 0.2s}
+.card-premium:hover{transform:scale(1.01)}
+.card-premium-glow{position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(201,153,58,0.25),transparent 70%);pointer-events:none}
+.badge-premium{display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#1C1208,#3D2010);color:var(--gold-light);border:1px solid rgba(201,153,58,0.4);border-radius:20px;padding:3px 9px;font-size:10px;font-weight:600;margin-bottom:6px}
+.sp-row{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px}
+.sp-img{width:54px;height:54px;border-radius:14px;background:rgba(255,255,255,0.08);border:1px solid rgba(201,153,58,0.2);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;overflow:hidden}
+.sp-img img{width:100%;height:100%;object-fit:cover;border-radius:14px}
+.sp-name{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--sand);line-height:1.2}
+.sp-addr{font-size:12px;color:rgba(245,238,227,0.45);margin-top:2px}
+.sp-stars{color:var(--gold-light);font-size:13px}
+.sp-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06)}
+.sp-meta{display:flex;gap:12px;font-size:11px;color:rgba(245,238,227,0.45)}
+.sp-cta{background:linear-gradient(135deg,var(--clay),var(--clay-dark));color:white;border:none;border-radius:10px;padding:7px 14px;font-size:12px;font-weight:600;font-family:'Outfit',sans-serif;cursor:pointer}
+
+/* PRO CARD */
+.card-pro{background:linear-gradient(135deg,#FFF8EE,#FFF3E0);border-radius:16px;padding:14px;display:flex;gap:12px;cursor:pointer;border:1.5px solid rgba(201,153,58,0.25);box-shadow:0 4px 16px rgba(201,153,58,0.1);position:relative;overflow:hidden;margin-bottom:8px;transition:all 0.2s}
+.card-pro:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(201,153,58,0.2)}
+.badge-pro{display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,var(--gold),#E8B84A);color:white;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600}
+.pro-img{width:58px;height:58px;border-radius:14px;background:white;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;box-shadow:0 4px 12px rgba(0,0,0,0.08);overflow:hidden}
+.pro-img img{width:100%;height:100%;object-fit:cover;border-radius:14px}
+
+/* REGULAR CARD */
+.place-card{background:white;border-radius:16px;padding:14px;display:flex;gap:12px;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 12px rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.04);margin-bottom:8px}
+.place-card:hover{box-shadow:0 8px 28px rgba(0,0,0,0.1);transform:translateY(-2px)}
+.place-img{width:64px;height:64px;border-radius:12px;background:var(--sand);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;overflow:hidden}
+.place-img img{width:100%;height:100%;object-fit:cover;border-radius:12px}
+.place-info{flex:1;min-width:0}
+.place-name{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.place-addr{font-size:12px;color:var(--warm-grey);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.place-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.stars{color:var(--gold);font-size:12px}
+.rating-txt{font-size:12px;color:var(--warm-grey);margin-left:3px}
+.place-save{width:28px;height:28px;background:var(--sand);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;transition:all 0.15s;flex-shrink:0;align-self:flex-start;border:none}
+.place-save.saved{background:#FDECEA}
+.open-pill{font-size:11px;padding:3px 8px;border-radius:8px;font-weight:500}
+.open-pill.open{background:#E8F5E9;color:#2E7D32}
+.open-pill.closed{background:#FDECEA;color:#C62828}
+
+/* LABELS */
+.sp-label-row{display:flex;align-items:center;justify-content:space-between;padding:6px 4px 2px}
+.sp-label{font-size:10px;color:var(--warm-grey);letter-spacing:1px;text-transform:uppercase}
+.sp-divider{height:1px;background:linear-gradient(90deg,rgba(201,153,58,0.3),transparent);margin:4px 0 8px}
+.organic-label{font-size:10px;color:rgba(140,123,107,0.6);letter-spacing:1px;text-transform:uppercase;padding:8px 4px 4px}
+
+/* DETAIL */
+.overlay{position:fixed;inset:0;background:rgba(28,18,8,0.6);z-index:100;display:flex;align-items:flex-end;animation:fadeIn 0.2s ease}
+.sheet{background:var(--cream);width:100%;max-height:90vh;border-radius:28px 28px 0 0;overflow-y:auto;animation:slideUp 0.3s ease}
+.sheet::-webkit-scrollbar{display:none}
+.detail-img{height:200px;background:linear-gradient(135deg,var(--sage),#3A5A4A);display:flex;align-items:center;justify-content:center;font-size:70px;position:relative;overflow:hidden;border-radius:28px 28px 0 0}
+.detail-img img{width:100%;height:100%;object-fit:cover}
+.detail-handle{width:40px;height:4px;background:rgba(255,255,255,0.3);border-radius:2px;position:absolute;top:12px;left:50%;transform:translateX(-50%)}
+.detail-close{position:absolute;top:16px;right:16px;width:32px;height:32px;background:rgba(0,0,0,0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;font-size:16px;border:none}
+.detail-body{padding:22px 20px 40px}
+.detail-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.detail-name{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;line-height:1.2}
+.detail-type{color:var(--warm-grey);font-size:14px;margin-top:3px}
+.detail-price{background:#E8F5E9;color:#2E7D32;font-size:13px;padding:5px 12px;border-radius:10px;font-weight:500;white-space:nowrap}
+.detail-stars{color:var(--gold);font-size:16px;margin-top:12px}
+.detail-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.detail-chip{background:white;border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12px}
+.detail-cta-row{display:flex;gap:10px;margin-top:22px}
+.detail-cta-main{flex:1;padding:15px;background:linear-gradient(135deg,var(--clay),var(--clay-dark));color:white;border:none;border-radius:14px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;box-shadow:0 6px 20px rgba(196,96,42,0.35)}
+.detail-save-btn{width:50px;height:50px;background:white;border:1px solid var(--border);border-radius:14px;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.detail-save-btn.saved{background:#FDECEA}
+
+/* FILTER DRAWER */
+.filter-overlay{position:fixed;inset:0;background:rgba(28,18,8,0.5);z-index:100;animation:fadeIn 0.2s ease}
+.filter-sheet{position:absolute;bottom:0;left:0;right:0;background:var(--cream);border-radius:28px 28px 0 0;padding:28px 20px 40px;animation:slideUp 0.3s ease}
+.filter-handle{width:40px;height:4px;background:var(--sand-deep);border-radius:2px;margin:0 auto 24px}
+.filter-title{font-family:'Cormorant Garamond',serif;font-size:24px;margin-bottom:20px}
+.filter-grp{margin-bottom:20px}
+.filter-grp-label{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--warm-grey);margin-bottom:10px}
+.filter-opts{display:flex;flex-wrap:wrap;gap:8px}
+.filter-opt{padding:8px 16px;background:white;border:2px solid var(--border);border-radius:20px;font-size:13px;cursor:pointer;transition:all 0.2s;font-family:'Outfit',sans-serif}
+.filter-opt.active{background:var(--clay);color:white;border-color:var(--clay)}
+.filter-actions{display:flex;gap:10px;margin-top:10px}
+.filter-reset{flex:1;padding:13px;background:white;border:2px solid var(--border);border-radius:14px;font-size:14px;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif}
+.filter-apply{flex:2;padding:13px;background:linear-gradient(135deg,var(--clay),var(--clay-dark));color:white;border:none;border-radius:14px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif}
+
+/* BOTTOM NAV */
+.bottom-nav{background:white;border-top:1px solid rgba(0,0,0,0.06);display:flex;padding:8px 0 20px;position:sticky;bottom:0;z-index:50;box-shadow:0 -4px 20px rgba(0,0,0,0.06);flex-shrink:0}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 0;transition:all 0.2s}
+.nav-icon{font-size:22px;line-height:1}
+.nav-label{font-size:10px;color:var(--warm-grey);font-weight:500}
+.nav-item.active .nav-label{color:var(--clay)}
+.nav-item.active .nav-icon{transform:scale(1.1)}
+
+/* SHIMMER */
+.shimmer{background:linear-gradient(90deg,var(--sand) 0%,var(--sand-deep) 50%,var(--sand) 100%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:10px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.shimmer-card{background:white;border-radius:16px;padding:14px;display:flex;gap:12px;margin-bottom:8px}
+.shimmer-img-el{width:64px;height:64px;border-radius:12px;flex-shrink:0}
+.shimmer-info{flex:1;display:flex;flex-direction:column;gap:8px;padding-top:4px}
+.shimmer-line{height:12px;border-radius:6px}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px;color:var(--warm-grey)}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.empty-title{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--ink);margin-bottom:6px}
+
+/* SPINNER */
+.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}
+
+/* PROFILE */
+.stat-card{background:white;border-radius:16px;padding:16px;text-align:center;box-shadow:var(--shadow)}
+
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="toast"></div>
+
+  <!-- AUTH -->
+  <div id="auth-screen" class="screen active">
+    <div class="auth-bg"></div><div class="zellige"></div>
+    <div class="auth-inner">
+      <div class="auth-logo-icon"><svg width="40" height="40" viewBox="0 0 50 50"><rect x="5" y="5" width="40" height="8" rx="4" fill="white"/><rect x="19" y="13" width="12" height="30" rx="4" fill="white"/><circle cx="38" cy="38" r="5" fill="#C9993A"/></svg></div>
+      <div class="auth-name">Tourista</div>
+      <div class="auth-tag">Discover the city</div>
+      <div class="auth-loc">📍 Casablanca, Morocco &nbsp;·&nbsp; ☀️ 22°C</div>
+      <div class="auth-form">
+        <div class="auth-tabs">
+          <div class="auth-tab active" id="tab-login" onclick="switchTab('login')">Sign In</div>
+          <div class="auth-tab" id="tab-signup" onclick="switchTab('signup')">Create Account</div>
+        </div>
+        <div class="auth-err" id="auth-err"></div>
+        <div class="auth-field" id="field-name" style="display:none">
+          <label>Your Name</label>
+          <input id="inp-name" type="text" placeholder="Ahmed or Sarah…">
+        </div>
+        <div class="auth-field">
+          <label>Email Address</label>
+          <input id="inp-email" type="email" placeholder="you@example.com">
+        </div>
+        <div class="auth-field">
+          <label>Password</label>
+          <input id="inp-pass" type="password" placeholder="••••••••">
+        </div>
+        <button class="auth-btn" id="auth-submit" onclick="handleAuth()">Sign In & Explore →</button>
+        <div class="auth-guest" onclick="handleGuest()">Or <span>continue as guest</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="main-screen" class="screen" style="flex-direction:column">
+
+    <!-- HOME -->
+    <div id="tab-home" class="tab-content" style="display:flex;flex-direction:column;flex:1;overflow-y:auto;padding-bottom:80px">
+      <div class="topbar">
+        <div class="topbar-row">
+          <div class="topbar-logo" style="display:flex;align-items:center;gap:8px"><svg width="24" height="24" viewBox="0 0 50 50"><rect x="5" y="5" width="40" height="8" rx="4" fill="white"/><rect x="19" y="13" width="12" height="30" rx="4" fill="white"/><circle cx="38" cy="38" r="5" fill="#C9993A"/></svg>Tourista</div>
+          <div class="topbar-avatar" id="avatar-btn" onclick="confirmSignOut()">T</div>
+        </div>
+        <div class="topbar-greeting">
+          <div class="topbar-small">📍 Casablanca, Morocco</div>
+          <div class="topbar-big">Welcome, <em id="greeting-name">Explorer</em>!</div>
+        </div>
+      </div>
+      <div class="search-wrap">
+        <div class="search-row">
+          <div class="search-box">
+            <span class="search-ico">🔍</span>
+            <input id="search-inp" placeholder="Search restaurants, places…" oninput="handleSearch(this.value)">
+            <span class="search-clear" id="search-clear" onclick="clearSearch()">✕</span>
+          </div>
+          <button class="filter-btn" onclick="openFilter()">⊟</button>
+        </div>
+      </div>
+      <div class="cats-wrap">
+        <div class="cats-scroll" id="cats-scroll"></div>
+      </div>
+      <div class="section" style="padding-bottom:20px">
+        <div class="sec-header">
+          <div class="sec-title" id="sec-title">Eat & Drink</div>
+          <div class="sec-count" id="sec-count">0 places</div>
+        </div>
+        <div id="places-list"></div>
+      </div>
+    </div>
+
+    <!-- SAVED -->
+    <div id="tab-saved" class="tab-content" style="display:none;flex-direction:column;flex:1;overflow-y:auto;padding-bottom:80px">
+      <div class="topbar">
+        <div class="topbar-row"><div class="topbar-logo" style="display:flex;align-items:center;gap:8px"><svg width="24" height="24" viewBox="0 0 50 50"><rect x="5" y="5" width="40" height="8" rx="4" fill="white"/><rect x="19" y="13" width="12" height="30" rx="4" fill="white"/><circle cx="38" cy="38" r="5" fill="#C9993A"/></svg>Tourista</div></div>
+        <div class="topbar-greeting"><div class="topbar-small">❤️ Your saved places</div></div>
+      </div>
+      <div style="padding:20px">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:28px;margin-bottom:20px">Saved Places</div>
+        <div id="saved-list"></div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div id="tab-profile" class="tab-content" style="display:none;flex-direction:column;flex:1;overflow-y:auto;padding-bottom:80px">
+      <div class="topbar">
+        <div class="topbar-row"><div class="topbar-logo" style="display:flex;align-items:center;gap:8px"><svg width="24" height="24" viewBox="0 0 50 50"><rect x="5" y="5" width="40" height="8" rx="4" fill="white"/><rect x="19" y="13" width="12" height="30" rx="4" fill="white"/><circle cx="38" cy="38" r="5" fill="#C9993A"/></svg>Tourista</div></div>
+        <div class="topbar-greeting">
+          <div class="topbar-small">👤 Profile</div>
+          <div class="topbar-big"><em id="profile-name">Explorer</em></div>
+        </div>
+      </div>
+      <div style="padding:20px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+          <div class="stat-card"><div style="font-size:28px">❤️</div><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600" id="stat-saved">0</div><div style="font-size:12px;color:var(--warm-grey)">Saved Places</div></div>
+          <div class="stat-card"><div style="font-size:28px">🌍</div><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600">1</div><div style="font-size:12px;color:var(--warm-grey)">Cities Explored</div></div>
+        </div>
+        <div style="background:white;border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow)">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:18px;margin-bottom:12px">⚡ Backend Status</div>
+          <div style="font-size:13px;display:flex;flex-direction:column;gap:8px">
+            <div>✅ Supabase connected</div>
+            <div id="auth-status">✅ Signed in</div>
+            <div>✅ Sponsored listings active</div>
+          </div>
+        </div>
+        <button onclick="confirmSignOut()" style="width:100%;padding:14px;background:var(--sand);border:2px solid var(--border);border-radius:14px;font-size:14px;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif;color:var(--clay)">Sign Out</button>
+      </div>
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <div class="bottom-nav">
+      <div class="nav-item active" id="nav-home" onclick="switchMainTab('home')"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></div>
+      <div class="nav-item" id="nav-saved" onclick="switchMainTab('saved')"><span class="nav-icon">🤍</span><span class="nav-label">Saved</span></div>
+      <div class="nav-item" id="nav-profile" onclick="switchMainTab('profile')"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></div>
+    </div>
+  </div>
+
+  <!-- DETAIL OVERLAY -->
+  <div id="detail-overlay" class="overlay" style="display:none" onclick="closeDetail(event)">
+    <div class="sheet" id="detail-sheet">
+      <div class="detail-img" id="detail-img"><div class="detail-handle"></div><button class="detail-close" onclick="closeDetailBtn()">✕</button><span id="detail-emoji" style="font-size:70px">📍</span></div>
+      <div class="detail-body">
+        <div class="detail-top"><div><div class="detail-name" id="d-name"></div><div class="detail-type" id="d-type"></div></div><div class="detail-price" id="d-price" style="display:none"></div></div>
+        <div class="detail-stars" id="d-stars"></div>
+        <div class="detail-chips" id="d-chips"></div>
+        <div class="detail-cta-row">
+          <button class="detail-cta-main" id="d-directions" onclick="getDirections()">🗺️ Get Directions</button>
+          <button class="detail-save-btn" id="d-save" onclick="toggleDetailSave()">🤍</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTER OVERLAY -->
+  <div id="filter-overlay" class="filter-overlay" style="display:none" onclick="closeFilter(event)">
+    <div class="filter-sheet">
+      <div class="filter-handle"></div>
+      <div class="filter-title">Filter Places</div>
+      <div class="filter-grp">
+        <div class="filter-grp-label">Minimum Rating</div>
+        <div class="filter-opts" id="rating-opts"></div>
+      </div>
+      <div class="filter-grp">
+        <div class="filter-grp-label">Price Range</div>
+        <div class="filter-opts" id="price-opts"></div>
+      </div>
+      <div class="filter-grp">
+        <div class="filter-grp-label">Availability</div>
+        <div class="filter-opts">
+          <div class="filter-opt active" id="open-all" onclick="setOpenFilter(false)">All</div>
+          <div class="filter-opt" id="open-now" onclick="setOpenFilter(true)">Open Now ✅</div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button class="filter-reset" onclick="resetFilters()">Reset</button>
+        <button class="filter-apply" onclick="applyFilters()">Apply Filters</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── SUPABASE ──
+const { createClient } = supabase;
+const sb = createClient(
+  'https://dctjnjlxvbwelqkhwmjd.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRjdGpuamx4dmJ3ZWxxa2h3bWpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMjI5MDMsImV4cCI6MjA4ODU5ODkwM30.YsV5UeUjRmCt6gb2r3pZh2LIqAydbMvX0zMqqlvDDnE'
+);
+
+// ── STATE ──
+let currentUser = null;
+let currentCat = 'restaurant';
+let savedIds = [];
+let allPlaces = [];
+let currentDetail = null;
+let searchQuery = '';
+let filters = { rating:'Any', price:'Any', openNow:false };
+let activeFilters = { rating:'Any', price:'Any', openNow:false };
+let authMode = 'login';
+
+// ── MOCK DATA ──
+const MOCK = {
+  restaurant:[
+    {id:'m1',name:'La Sqala',address:'Bd des Almohades',rating:4.8,total_reviews:2100,is_open:true,emoji:'🥘',category:'restaurant',price_level:2,plan:'premium'},
+    {id:'m2',name:'Le Cabestan',address:'Corniche, Ain Diab',rating:4.7,total_reviews:1400,is_open:true,emoji:'🦞',category:'restaurant',price_level:3,plan:'pro'},
+    {id:'m3',name:"Rick's Café",address:'Rue Sour Jdid',rating:4.6,total_reviews:3200,is_open:false,emoji:'🍸',category:'restaurant',price_level:3,plan:null},
+    {id:'m4',name:'Café Maure',address:'Bd Tarik Ibn Ziad',rating:4.5,total_reviews:890,is_open:true,emoji:'🍵',category:'restaurant',price_level:1,plan:null},
+    {id:'m5',name:'Basmane',address:'Bd de la Corniche',rating:4.4,total_reviews:620,is_open:true,emoji:'🫕',category:'restaurant',price_level:2,plan:null},
+  ],
+  tourist_attraction:[
+    {id:'m6',name:'Hassan II Mosque',address:'Bd Sidi Mohammed Ben Abdallah',rating:4.9,total_reviews:8400,is_open:true,emoji:'🕌',category:'tourist_attraction',price_level:1,plan:'premium'},
+    {id:'m7',name:'Old Medina',address:'Medina, Casablanca',rating:4.3,total_reviews:1800,is_open:true,emoji:'🏛',category:'tourist_attraction',price_level:0,plan:null},
+    {id:'m8',name:'Corniche Ain Diab',address:'Corniche, Casablanca',rating:4.5,total_reviews:5600,is_open:true,emoji:'🌊',category:'tourist_attraction',price_level:0,plan:null},
+  ],
+  lodging:[
+    {id:'m9',name:'Four Seasons Casablanca',address:'Bd de la Corniche',rating:4.8,total_reviews:1100,is_open:true,emoji:'🏨',category:'lodging',price_level:4,plan:'premium'},
+    {id:'m10',name:'Hôtel Kenzi Tower',address:'Avenue des FAR',rating:4.5,total_reviews:780,is_open:true,emoji:'🏩',category:'lodging',price_level:3,plan:'pro'},
+  ],
+  night_club:[
+    {id:'m11',name:'Armstrong Jazz Club',address:'Bd de la Corniche',rating:4.4,total_reviews:430,is_open:false,emoji:'🎷',category:'night_club',price_level:2,plan:null},
+  ],
+  shopping_mall:[
+    {id:'m12',name:'Morocco Mall',address:'Corniche, Ain Diab',rating:4.4,total_reviews:9800,is_open:true,emoji:'🛍️',category:'shopping_mall',price_level:2,plan:'pro'},
+  ],
+  spa:[
+    {id:'m13',name:"L'Spa Four Seasons",address:'Bd de la Corniche',rating:4.9,total_reviews:310,is_open:true,emoji:'🧖',category:'spa',price_level:4,plan:'premium'},
+  ],
+};
+
+const CATS = [
+  {id:'restaurant',label:'Eat & Drink',icon:'🍽️'},
+  {id:'tourist_attraction',label:'Attractions',icon:'🎭'},
+  {id:'lodging',label:'Stay',icon:'🏨'},
+  {id:'night_club',label:'Nightlife',icon:'🌙'},
+  {id:'shopping_mall',label:'Shopping',icon:'🛍️'},
+  {id:'spa',label:'Spa',icon:'🧖'},
+];
+
+// ── HELPERS ──
+function starsStr(r){ const f=Math.round(r||0); return '★'.repeat(f)+'☆'.repeat(5-f); }
+function priceStr(l){ if(l===0)return'Free'; return'$'.repeat(l||1); }
+
+let toastTimer;
+function showToast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+// ── AUTH ──
+function switchTab(mode){
+  authMode=mode;
+  document.getElementById('tab-login').classList.toggle('active',mode==='login');
+  document.getElementById('tab-signup').classList.toggle('active',mode==='signup');
+  document.getElementById('field-name').style.display=mode==='signup'?'block':'none';
+  document.getElementById('auth-submit').textContent=mode==='login'?'Sign In & Explore →':'Create Account →';
+  document.getElementById('auth-err').style.display='none';
+}
+
+async function handleAuth(){
+  const email=document.getElementById('inp-email').value.trim();
+  const pass=document.getElementById('inp-pass').value.trim();
+  const name=document.getElementById('inp-name').value.trim();
+  const errEl=document.getElementById('auth-err');
+  const btn=document.getElementById('auth-submit');
+  if(!email||!pass){errEl.textContent='Please fill in all fields';errEl.style.display='block';return;}
+  btn.innerHTML='<span class="spinner"></span>Loading…'; btn.disabled=true;
+  try{
+    if(authMode==='signup'){
+      const {data,error}=await sb.auth.signUp({email,password:pass});
+      if(error)throw error;
+      if(data.user){
+        await sb.from('profiles').upsert({id:data.user.id,name:name||email.split('@')[0],email});
+        loginUser({id:data.user.id,name:name||email.split('@')[0],email});
+        showToast('✅ Welcome to Tourista!');
+      }
+    } else {
+      const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+      if(error)throw error;
+      if(data.user){
+        const {data:profile}=await sb.from('profiles').select('*').eq('id',data.user.id).single();
+        loginUser({id:data.user.id,name:profile?.name||email.split('@')[0],email});
+        showToast('Welcome back! 🧭');
+      }
+    }
+  } catch(e){
+    errEl.textContent=e.message||'Something went wrong';
+    errEl.style.display='block';
+    btn.innerHTML=authMode==='login'?'Sign In & Explore →':'Create Account →';
+    btn.disabled=false;
+  }
+}
+
+function handleGuest(){
+  loginUser({id:null,name:'Explorer',email:'guest',isGuest:true});
+  showToast('Exploring as guest 🧭');
+}
+
+function loginUser(user){
+  currentUser=user;
+  document.getElementById('greeting-name').textContent=user.name.split(' ')[0];
+  document.getElementById('profile-name').textContent=user.name;
+  document.getElementById('avatar-btn').textContent=user.name[0].toUpperCase();
+  document.getElementById('auth-status').textContent=user.isGuest?'⚠️ Guest mode':'✅ Signed in — data synced';
+  showScreen('main-screen');
+  buildCats();
+  loadPlaces();
+  if(user.id&&!user.isGuest) loadSaved();
+}
+
+async function loadSaved(){
+  const {data}=await sb.from('saved_places').select('place_id').eq('user_id',currentUser.id);
+  if(data) savedIds=data.map(r=>r.place_id);
+  updateSavedNav();
+}
+
+function confirmSignOut(){
+  if(confirm('Sign out of Tourista?')){
+    sb.auth.signOut();
+    currentUser=null; savedIds=[];
+    showScreen('auth-screen');
+  }
+}
+
+// ── SCREENS ──
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function switchMainTab(tab){
+  ['home','saved','profile'].forEach(t=>{
+    const el=document.getElementById('tab-'+t);
+    el.style.display=t===tab?'flex':'none';
+    document.getElementById('nav-'+t).classList.toggle('active',t===tab);
+  });
+  if(tab==='saved') renderSaved();
+  if(tab==='profile') document.getElementById('stat-saved').textContent=savedIds.length;
+}
+
+// ── CATEGORIES ──
+function buildCats(){
+  const wrap=document.getElementById('cats-scroll');
+  wrap.innerHTML=CATS.map(c=>`
+    <div class="cat-chip ${c.id===currentCat?'active':''}" onclick="selectCat('${c.id}')">
+      <span>${c.icon}</span>${c.label}
+    </div>
+  `).join('');
+}
+
+function selectCat(id){
+  currentCat=id; searchQuery='';
+  document.getElementById('search-inp').value='';
+  document.getElementById('search-clear').style.display='none';
+  buildCats(); loadPlaces();
+}
+
+// ── PLACES ──
+function loadPlaces(){
+  const list=document.getElementById('places-list');
+  list.innerHTML=['','',''].map(()=>`<div class="shimmer-card"><div class="shimmer-img-el shimmer"></div><div class="shimmer-info"><div class="shimmer-line shimmer" style="width:70%"></div><div class="shimmer-line shimmer" style="width:50%"></div><div class="shimmer-line shimmer" style="width:90%"></div></div></div>`).join('');
+  setTimeout(()=>{
+    let data=[...(MOCK[currentCat]||[])];
+    data.sort((a,b)=>{const o={premium:0,pro:1,basic:2};return(o[a.plan]??3)-(o[b.plan]??3);});
+    if(searchQuery) data=data.filter(p=>p.name.toLowerCase().includes(searchQuery.toLowerCase())||p.address?.toLowerCase().includes(searchQuery.toLowerCase()));
+    data=applyFiltersToData(data);
+    allPlaces=data;
+    const cat=CATS.find(c=>c.id===currentCat);
+    document.getElementById('sec-title').textContent=searchQuery?`Results for "${searchQuery}"`:cat?.label||'Places';
+    document.getElementById('sec-count').textContent=data.length+' places';
+    renderPlaces(data);
+  },400);
+}
+
+function applyFiltersToData(data){
+  return data.filter(p=>{
+    if(activeFilters.openNow&&!p.is_open) return false;
+    if(activeFilters.rating!=='Any'&&(p.rating||0)<parseFloat(activeFilters.rating)) return false;
+    if(activeFilters.price!=='Any'&&p.price_level!=null){
+      if(activeFilters.price==='Free'&&p.price_level!==0) return false;
+      if(activeFilters.price==='$'&&p.price_level!==1) return false;
+      if(activeFilters.price==='$$'&&p.price_level!==2) return false;
+      if(activeFilters.price==='$$$'&&p.price_level<3) return false;
+    }
+    return true;
+  });
+}
+
+function renderPlaces(data){
+  const list=document.getElementById('places-list');
+  if(!data.length){list.innerHTML='<div class="empty"><div class="empty-icon">🏜️</div><div class="empty-title">No results found</div><div style="font-size:14px;margin-top:6px">Try a different search or filter</div></div>';return;}
+  const premium=data.filter(p=>p.plan==='premium');
+  const pro=data.filter(p=>p.plan==='pro');
+  const organic=data.filter(p=>!p.plan||p.plan==='basic');
+  let html='';
+  if(premium.length){
+    html+=`<div class="sp-label-row"><div class="sp-label">👑 Premium Placement</div><div style="font-size:10px;color:rgba(140,123,107,0.5)">Ad</div></div><div class="sp-divider"></div>`;
+    html+=premium.map(p=>cardPremium(p)).join('');
+  }
+  if(pro.length){
+    html+=`<div class="sp-label-row" style="margin-top:8px"><div class="sp-label">⭐ Pro Listing</div><div style="font-size:10px;color:rgba(140,123,107,0.5)">Ad</div></div><div class="sp-divider"></div>`;
+    html+=pro.map(p=>cardPro(p)).join('');
+  }
+  if(organic.length){
+    if(premium.length||pro.length) html+=`<div class="organic-label">All Results</div>`;
+    html+=organic.map(p=>cardRegular(p)).join('');
+  }
+  list.innerHTML=html;
+}
+
+function cardPremium(p){
+  const s=savedIds.includes(p.id);
+  return `<div class="card-premium" onclick="openDetail('${p.id}')">
+    <div class="card-premium-glow"></div>
+    <div class="sp-row">
+      <div class="sp-img">${p.photo_url?`<img src="${p.photo_url}" alt="${p.name}">`:`<span>${p.emoji}</span>`}</div>
+      <div style="flex:1;min-width:0">
+        <div class="badge-premium">👑 Premium</div>
+        <div class="sp-name">${p.name}</div>
+        <div class="sp-addr">${p.address}</div>
+      </div>
+      <button class="place-save ${s?'saved':''}" onclick="event.stopPropagation();toggleSave('${p.id}')">${s?'❤️':'🤍'}</button>
+    </div>
+    <div><span class="sp-stars">${starsStr(p.rating)}</span> <span style="font-size:13px;color:var(--sand);font-weight:500">${p.rating}</span> <span style="font-size:11px;color:rgba(245,238,227,0.4)">(${p.total_reviews?.toLocaleString()})</span></div>
+    <div class="sp-footer">
+      <div class="sp-meta"><span>📍 ${p.address.split(',')[0]}</span><span>${p.is_open?'✅ Open':'🔴 Closed'}</span><span>💰 ${priceStr(p.price_level)}</span></div>
+      <button class="sp-cta" onclick="event.stopPropagation();openDetail('${p.id}')">View →</button>
+    </div>
+  </div>`;
+}
+
+function cardPro(p){
+  const s=savedIds.includes(p.id);
+  return `<div class="card-pro" onclick="openDetail('${p.id}')">
+    <div class="pro-img">${p.photo_url?`<img src="${p.photo_url}" alt="${p.name}">`:`<span>${p.emoji}</span>`}</div>
+    <div class="place-info">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <div class="place-name">${p.name}</div>
+        <span class="badge-pro">⭐ Pro</span>
+      </div>
+      <div class="place-addr">${p.address}</div>
+      <div class="place-footer">
+        <span><span class="stars">${starsStr(p.rating)}</span><span class="rating-txt">${p.rating} (${p.total_reviews?.toLocaleString()})</span></span>
+        <span class="open-pill ${p.is_open?'open':'closed'}">${p.is_open?'Open':'Closed'}</span>
+      </div>
+    </div>
+    <button class="place-save ${s?'saved':''}" onclick="event.stopPropagation();toggleSave('${p.id}')">${s?'❤️':'🤍'}</button>
+  </div>`;
+}
+
+function cardRegular(p){
+  const s=savedIds.includes(p.id);
+  return `<div class="place-card" onclick="openDetail('${p.id}')">
+    <div class="place-img">${p.photo_url?`<img src="${p.photo_url}" alt="${p.name}">`:`<span>${p.emoji}</span>`}</div>
+    <div class="place-info">
+      <div class="place-name">${p.name}</div>
+      <div class="place-addr">${p.address}</div>
+      <div class="place-footer">
+        <span><span class="stars">${starsStr(p.rating)}</span><span class="rating-txt">${p.rating} (${p.total_reviews?.toLocaleString()})</span></span>
+        ${p.is_open!=null?`<span class="open-pill ${p.is_open?'open':'closed'}">${p.is_open?'Open':'Closed'}</span>`:`<span class="rating-txt">${priceStr(p.price_level)}</span>`}
+      </div>
+    </div>
+    <button class="place-save ${s?'saved':''}" onclick="event.stopPropagation();toggleSave('${p.id}')">${s?'❤️':'🤍'}</button>
+  </div>`;
+}
+
+// ── SAVE ──
+async function toggleSave(id){
+  if(!currentUser?.id||currentUser.isGuest){showToast('Sign in to save places ❤️');return;}
+  const place=allPlaces.find(p=>p.id===id)||[...Object.values(MOCK)].flat().find(p=>p.id===id);
+  if(!place) return;
+  const isSaved=savedIds.includes(id);
+  if(isSaved){
+    savedIds=savedIds.filter(i=>i!==id);
+    showToast(`Removed ${place.name}`);
+    await sb.from('saved_places').delete().eq('user_id',currentUser.id).eq('place_id',id);
+  } else {
+    savedIds.push(id);
+    showToast(`❤️ Saved ${place.name}`);
+    await sb.from('saved_places').upsert({user_id:currentUser.id,place_id:id});
+  }
+  updateSavedNav();
+  loadPlaces();
+}
+
+function updateSavedNav(){
+  const nav=document.getElementById('nav-saved');
+  nav.innerHTML=`<span class="nav-icon">${savedIds.length?'❤️':'🤍'}</span><span class="nav-label">Saved${savedIds.length?' ('+savedIds.length+')':''}</span>`;
+}
+
+// ── DETAIL ──
+function openDetail(id){
+  const place=[...Object.values(MOCK)].flat().find(p=>p.id===id);
+  if(!place) return;
+  currentDetail=place;
+  document.getElementById('d-name').textContent=place.name;
+  document.getElementById('d-type').textContent=place.category?.replace(/_/g,' ')||'';
+  document.getElementById('detail-emoji').textContent=place.emoji||'📍';
+  document.getElementById('d-stars').textContent=starsStr(place.rating)+' '+place.rating+' ('+place.total_reviews?.toLocaleString()+' reviews)';
+  const priceEl=document.getElementById('d-price');
+  if(place.price_level!=null){priceEl.textContent=priceStr(place.price_level);priceEl.style.display='block';}
+  else priceEl.style.display='none';
+  const chips=document.getElementById('d-chips');
+  chips.innerHTML=[
+    place.address?`<span class="detail-chip">📍 ${place.address}</span>`:'',
+    place.is_open!=null?`<span class="detail-chip">${place.is_open?'✅ Open now':'🔴 Closed'}</span>`:'',
+    place.price_level!=null?`<span class="detail-chip">💰 ${priceStr(place.price_level)}</span>`:'',
+  ].join('');
+  const saveBtn=document.getElementById('d-save');
+  saveBtn.textContent=savedIds.includes(id)?'❤️':'🤍';
+  saveBtn.classList.toggle('saved',savedIds.includes(id));
+  document.getElementById('detail-overlay').style.display='flex';
+}
+
+function closeDetail(e){if(e.target===e.currentTarget) document.getElementById('detail-overlay').style.display='none';}
+function closeDetailBtn(){document.getElementById('detail-overlay').style.display='none';}
+
+function getDirections(){
+  if(!currentDetail) return;
+  window.open(`https://maps.google.com/?q=${encodeURIComponent(currentDetail.name+' '+currentDetail.address+' Casablanca')}`,'_blank');
+}
+
+async function toggleDetailSave(){
+  if(!currentDetail) return;
+  await toggleSave(currentDetail.id);
+  const saveBtn=document.getElementById('d-save');
+  saveBtn.textContent=savedIds.includes(currentDetail.id)?'❤️':'🤍';
+  saveBtn.classList.toggle('saved',savedIds.includes(currentDetail.id));
+}
+
+// ── SAVED TAB ──
+function renderSaved(){
+  const list=document.getElementById('saved-list');
+  if(!currentUser?.id||currentUser.isGuest){
+    list.innerHTML='<div class="empty"><div class="empty-icon">🔐</div><div class="empty-title">Sign in to save places</div><div style="font-size:14px;margin-top:6px">Create a free account to save your favourite spots</div></div>';
+    return;
+  }
+  if(!savedIds.length){
+    list.innerHTML='<div class="empty"><div class="empty-icon">🤍</div><div class="empty-title">Nothing saved yet</div><div style="font-size:14px;margin-top:6px">Tap the heart on any place to save it</div></div>';
+    return;
+  }
+  const places=[...Object.values(MOCK)].flat().filter(p=>savedIds.includes(p.id));
+  list.innerHTML=places.map(p=>cardRegular(p)).join('');
+}
+
+// ── SEARCH ──
+let searchTimer;
+function handleSearch(val){
+  searchQuery=val;
+  const clear=document.getElementById('search-clear');
+  clear.style.display=val?'block':'none';
+  clearTimeout(searchTimer);
+  searchTimer=setTimeout(loadPlaces,400);
+}
+function clearSearch(){
+  searchQuery='';
+  document.getElementById('search-inp').value='';
+  document.getElementById('search-clear').style.display='none';
+  loadPlaces();
+}
+
+// ── FILTER ──
+function openFilter(){
+  const ratingOpts=['Any','3+','3.5+','4+','4.5+'];
+  const priceOpts=['Any','Free','$','$$','$$$'];
+  document.getElementById('rating-opts').innerHTML=ratingOpts.map(r=>`<div class="filter-opt ${filters.rating===r?'active':''}" onclick="setRating('${r}')">${r}</div>`).join('');
+  document.getElementById('price-opts').innerHTML=priceOpts.map(p=>`<div class="filter-opt ${filters.price===p?'active':''}" onclick="setPrice('${p}')">${p}</div>`).join('');
+  document.getElementById('open-all').classList.toggle('active',!filters.openNow);
+  document.getElementById('open-now').classList.toggle('active',filters.openNow);
+  document.getElementById('filter-overlay').style.display='block';
+}
+
+function closeFilter(e){if(e.target===e.currentTarget){filters={...activeFilters};document.getElementById('filter-overlay').style.display='none';}}
+function setRating(v){filters.rating=v;openFilter();}
+function setPrice(v){filters.price=v;openFilter();}
+function setOpenFilter(v){filters.openNow=v;openFilter();}
+function applyFilters(){activeFilters={...filters};document.getElementById('filter-overlay').style.display='none';loadPlaces();}
+function resetFilters(){filters={rating:'Any',price:'Any',openNow:false};activeFilters={...filters};document.getElementById('filter-overlay').style.display='none';loadPlaces();}
+
+// ── INIT ──
+window.addEventListener('load', async()=>{
+  const {data:{session}}=await sb.auth.getSession();
+  if(session?.user){
+    const {data:profile}=await sb.from('profiles').select('*').eq('id',session.user.id).single();
+    loginUser({id:session.user.id,name:profile?.name||session.user.email.split('@')[0],email:session.user.email});
+  }
+});
+</script>
+<script>
+if("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js")
+      .then(r => console.log("✅ Tourista PWA ready"))
+      .catch(e => console.log("SW error:", e));
+  });
+}
+</script>
+</body>
+</html>
