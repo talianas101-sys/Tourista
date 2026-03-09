@@ -483,6 +483,10 @@ function loginUser(user){
   currentUser=user;
   document.getElementById('greeting-name').textContent=user.name.split(' ')[0];
   document.getElementById('profile-name').textContent=user.name;
+  document.getElementById('profile-name-big').textContent=user.name;
+  document.getElementById('profile-avatar').textContent=user.name[0].toUpperCase();
+  document.getElementById('profile-email-display').textContent=user.isGuest?'Guest mode':user.email;
+  document.getElementById('edit-name-inp').value=user.isGuest?'':user.name;
   document.getElementById('avatar-btn').textContent=user.name[0].toUpperCase();
   document.getElementById('auth-status').textContent=user.isGuest?'⚠️ Guest mode':'✅ Signed in — data synced';
   showScreen('main-screen');
@@ -759,6 +763,46 @@ function setPrice(v){filters.price=v;openFilter();}
 function setOpenFilter(v){filters.openNow=v;openFilter();}
 function applyFilters(){activeFilters={...filters};document.getElementById('filter-overlay').style.display='none';loadPlaces();}
 function resetFilters(){filters={rating:'Any',price:'Any',openNow:false};activeFilters={...filters};document.getElementById('filter-overlay').style.display='none';loadPlaces();}
+
+
+// ── PROFILE EDIT ──
+async function saveName(){
+  const inp = document.getElementById('edit-name-inp');
+  const newName = inp.value.trim();
+  if(!newName){ showToast('Please enter a name'); return; }
+  if(!currentUser?.id || currentUser.isGuest){ showToast('Sign in to edit your profile'); return; }
+  const btn = document.querySelector('[onclick="saveName()"]');
+  btn.textContent = '...'; btn.disabled = true;
+  const {error} = await sb.from('profiles').update({name: newName}).eq('id', currentUser.id);
+  if(!error){
+    currentUser.name = newName;
+    document.getElementById('profile-name').textContent = newName;
+    document.getElementById('profile-name-big').textContent = newName;
+    document.getElementById('greeting-name').textContent = newName.split(' ')[0];
+    document.getElementById('avatar-btn').textContent = newName[0].toUpperCase();
+    document.getElementById('profile-avatar').textContent = newName[0].toUpperCase();
+    document.getElementById('name-save-msg').style.display = 'block';
+    setTimeout(()=>document.getElementById('name-save-msg').style.display='none', 3000);
+    showToast('✅ Name updated!');
+  } else {
+    showToast('Error saving name');
+  }
+  btn.textContent = 'Save'; btn.disabled = false;
+}
+
+async function confirmDeleteAccount(){
+  if(!currentUser?.id || currentUser.isGuest){ showToast('No account to delete'); return; }
+  if(!confirm('⚠️ Delete your account permanently? This cannot be undone.')) return;
+  if(!confirm('Are you absolutely sure? All your saved places will be lost.')) return;
+  showToast('Deleting account...');
+  await sb.from('saved_places').delete().eq('user_id', currentUser.id);
+  await sb.from('profiles').delete().eq('id', currentUser.id);
+  await sb.auth.admin?.deleteUser(currentUser.id).catch(()=>{});
+  await sb.auth.signOut();
+  currentUser = null; savedIds = [];
+  showToast('Account deleted');
+  showScreen('auth-screen');
+}
 
 // ── INIT ──
 window.addEventListener('load', async()=>{
