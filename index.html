@@ -594,9 +594,7 @@ function getCatEmoji(cat){
 
 async function fetchFoursquarePhotos(fsq_id){
   try{
-    const r = await fetch(`https://api.foursquare.com/v3/places/${fsq_id}/photos?limit=4`, {
-      headers:{'Authorization': FSQ_KEY, 'Accept': 'application/json'}
-    });
+    const r = await fetch(`/api/photos?fsq_id=${fsq_id}`);
     const photos = await r.json();
     return photos.map(p=>`${p.prefix}original${p.suffix}`);
   } catch(e){ return []; }
@@ -611,9 +609,9 @@ async function loadPlaces(){
     const query = searchQuery ? `&query=${encodeURIComponent(searchQuery)}` : '';
     const url = `https://api.foursquare.com/v3/places/search?ll=${CASA_LL}&radius=10000&categories=${catId}&limit=20&fields=fsq_id,name,location,rating,stats,hours,price,photos${query}`;
     
-    const resp = await fetch(url, {
-      headers: {'Authorization': FSQ_KEY, 'Accept': 'application/json'}
-    });
+    // Use our proxy to avoid CORS issues
+    const proxyUrl = `/api/places?category=${currentCat}${searchQuery ? '&query=' + encodeURIComponent(searchQuery) : ''}`;
+    const resp = await fetch(proxyUrl);
     const json = await resp.json();
 
     if(json.results && json.results.length > 0){
