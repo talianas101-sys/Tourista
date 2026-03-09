@@ -13,6 +13,7 @@
 <title>Tourista — Casablanca</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAnHDrLW07g-d1YaGof0IUoz-w_CS3OFdo&libraries=places&callback=initGooglePlaces" async defer></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--clay:#C4602A;--clay-light:#E8845A;--clay-dark:#8B3A1A;--gold:#C9993A;--gold-light:#F0C96A;--ink:#1C1208;--sand:#F5EEE3;--sand-deep:#EAE0D0;--cream:#FDFAF5;--sage:#5B7A6A;--warm-grey:#8C7B6B;--border:rgba(196,96,42,0.15);--shadow:0 4px 24px rgba(28,18,8,0.08)}
@@ -576,21 +577,101 @@ function selectCat(id){
 }
 
 // ── PLACES ──
+const GOOGLE_KEY = 'AIzaSyAnHDrLW07g-d1YaGof0IUoz-w_CS3OFdo';
+const CASA = {lat:33.5731, lng:-7.5898};
+let googleService = null;
+let googleMap = null;
+
+function initGooglePlaces(){
+  // Create hidden map for Places service
+  const mapDiv = document.createElement('div');
+  mapDiv.style.display = 'none';
+  document.body.appendChild(mapDiv);
+  googleMap = new google.maps.Map(mapDiv, {center:CASA, zoom:13});
+  googleService = new google.maps.places.PlacesService(googleMap);
+  console.log('✅ Google Places ready');
+  // Reload current tab with real data
+  loadPlaces();
+}
+
+const CAT_TO_GOOGLE = {
+  restaurant:'restaurant', tourist_attraction:'tourist_attraction',
+  lodging:'lodging', night_club:'night_club', shopping_mall:'shopping_mall', spa:'spa'
+};
+
+function getCatEmoji(cat){
+  return {restaurant:'🍽️',tourist_attraction:'🎭',lodging:'🏨',night_club:'🌙',shopping_mall:'🛍️',spa:'🧖'}[cat]||'📍';
+}
+
+function getPhotoUrl(photo){
+  if(!photo) return null;
+  return photo.getUrl({maxWidth:800, maxHeight:600});
+}
+
 function loadPlaces(){
   const list=document.getElementById('places-list');
   list.innerHTML=['','',''].map(()=>`<div class="shimmer-card"><div class="shimmer-img-el shimmer"></div><div class="shimmer-info"><div class="shimmer-line shimmer" style="width:70%"></div><div class="shimmer-line shimmer" style="width:50%"></div><div class="shimmer-line shimmer" style="width:90%"></div></div></div>`).join('');
-  setTimeout(()=>{
-    let data=[...(MOCK[currentCat]||[])];
-    data.sort((a,b)=>{const o={premium:0,pro:1,basic:2};return(o[a.plan]??3)-(o[b.plan]??3);});
-    if(searchQuery) data=data.filter(p=>p.name.toLowerCase().includes(searchQuery.toLowerCase())||p.address?.toLowerCase().includes(searchQuery.toLowerCase()));
-    data=applyFiltersToData(data);
-    allPlaces=data;
-    const cat=CATS.find(c=>c.id===currentCat);
-    document.getElementById('sec-title').textContent=searchQuery?`Results for "${searchQuery}"`:cat?.label||'Places';
-    document.getElementById('sec-count').textContent=data.length+' places';
-    renderPlaces(data);
-  },400);
+
+  if(googleService){
+    const type = CAT_TO_GOOGLE[currentCat]||'establishment';
+    const req = {
+      location: new google.maps.LatLng(CASA.lat, CASA.lng),
+      radius: 10000,
+      type: type,
+      keyword: (searchQuery||'') + ' Casablanca'
+    };
+    googleService.nearbySearch(req, (results, status)=>{
+      if(status===google.maps.places.PlacesServiceStatus.OK && results.length>0){
+        let data = results.slice(0,20).map(p=>{
+          const photos = p.photos||[];
+          return {
+            id: p.place_id,
+            name: p.name,
+            address: p.vicinity,
+            rating: p.rating,
+            total_reviews: p.user_ratings_total,
+            is_open: p.opening_hours?.isOpen?.() ?? null,
+            emoji: getCatEmoji(currentCat),
+            category: currentCat,
+            price_level: p.price_level,
+            photo_url: photos[0] ? getPhotoUrl(photos[0]) : null,
+            photos: photos.slice(0,4).map(ph=>getPhotoUrl(ph)),
+            plan: null,
+          };
+        });
+
+        // Merge sponsored mock places at top
+        const sponsored = (MOCK[currentCat]||[]).filter(p=>p.plan);
+        sponsored.forEach(sp=>{ if(!data.find(d=>d.name===sp.name)) data.unshift(sp); });
+        data.sort((a,b)=>{const o={premium:0,pro:1,basic:2};return(o[a.plan]??3)-(o[b.plan]??3);});
+        data=applyFiltersToData(data);
+        allPlaces=data;
+        const cat=CATS.find(c=>c.id===currentCat);
+        document.getElementById('sec-title').textContent=searchQuery?`Results for "${searchQuery}"`:cat?.label||'Places';
+        document.getElementById('sec-count').textContent=data.length+' places';
+        renderPlaces(data);
+      } else {
+        console.log('Google Places status:', status, '- using mock');
+        loadMockPlaces();
+      }
+    });
+  } else {
+    loadMockPlaces();
+  }
 }
+
+function loadMockPlaces(){
+  let data=[...(MOCK[currentCat]||[])];
+  data.sort((a,b)=>{const o={premium:0,pro:1,basic:2};return(o[a.plan]??3)-(o[b.plan]??3);});
+  if(searchQuery) data=data.filter(p=>p.name.toLowerCase().includes(searchQuery.toLowerCase())||p.address?.toLowerCase().includes(searchQuery.toLowerCase()));
+  data=applyFiltersToData(data);
+  allPlaces=data;
+  const cat=CATS.find(c=>c.id===currentCat);
+  document.getElementById('sec-title').textContent=searchQuery?`Results for "${searchQuery}"`:cat?.label||'Places';
+  document.getElementById('sec-count').textContent=data.length+' places';
+  renderPlaces(data);
+}
+
 
 function applyFiltersToData(data){
   return data.filter(p=>{
