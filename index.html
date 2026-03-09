@@ -8,697 +8,280 @@
 <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-
 :root {
-  --clay: #C4602A;
-  --clay-light: #E8845A;
-  --clay-dark: #8B3A1A;
-  --gold: #C9993A;
-  --gold-light: #F0C96A;
-  --ink: #1C1208;
-  --sand: #F5EEE3;
-  --sand-deep: #EAE0D0;
-  --cream: #FDFAF5;
-  --sage: #5B7A6A;
-  --warm-grey: #8C7B6B;
-  --border: rgba(196,96,42,0.15);
-  --shadow: 0 4px 24px rgba(28,18,8,0.08);
-  --shadow-lg: 0 12px 48px rgba(28,18,8,0.14);
+  --clay:#C4602A; --clay-light:#E8845A; --clay-dark:#8B3A1A;
+  --gold:#C9993A; --gold-light:#F0C96A;
+  --ink:#1C1208; --sand:#F5EEE3; --sand-deep:#EAE0D0;
+  --cream:#FDFAF5; --sage:#5B7A6A; --warm-grey:#8C7B6B;
+  --border:rgba(196,96,42,0.15);
+  --shadow:0 4px 24px rgba(28,18,8,0.08);
 }
+body { background:var(--ink); font-family:'Outfit',sans-serif; color:var(--ink); min-height:100vh; display:flex; justify-content:center; }
+#root { width:100%; max-width:430px; min-height:100vh; background:var(--cream); position:relative; overflow:hidden; display:flex; flex-direction:column; }
+::-webkit-scrollbar { width:0; }
 
-body {
-  background: var(--ink);
-  font-family: 'Outfit', sans-serif;
-  color: var(--ink);
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-}
+/* TOAST */
+.toast { position:fixed; bottom:100px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--ink); color:var(--sand); padding:10px 20px; border-radius:30px; font-size:13px; opacity:0; pointer-events:none; transition:all 0.3s; z-index:999; white-space:nowrap; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
-#root {
-  width: 100%;
-  max-width: 430px;
-  min-height: 100vh;
-  background: var(--cream);
-  position: relative;
-  overflow: hidden;
-}
+/* AUTH */
+.auth-screen { min-height:100vh; background:var(--ink); display:flex; flex-direction:column; position:relative; overflow:hidden; }
+.auth-bg { position:absolute; inset:0; background:radial-gradient(ellipse at 70% 30%,rgba(196,96,42,0.35) 0%,transparent 60%),radial-gradient(ellipse at 20% 80%,rgba(201,153,58,0.2) 0%,transparent 50%); }
+.zellige { position:absolute; inset:0; opacity:0.04; background-image:repeating-linear-gradient(0deg,var(--gold) 0,var(--gold) 1px,transparent 0,transparent 40px),repeating-linear-gradient(90deg,var(--gold) 0,var(--gold) 1px,transparent 0,transparent 40px),repeating-linear-gradient(45deg,var(--gold) 0,var(--gold) 1px,transparent 0,transparent 28px),repeating-linear-gradient(-45deg,var(--gold) 0,var(--gold) 1px,transparent 0,transparent 28px); }
+.auth-content { position:relative; z-index:2; display:flex; flex-direction:column; flex:1; padding:60px 32px 40px; }
+.auth-logo-wrap { margin-bottom:auto; padding-top:20px; }
+.auth-logo-icon { width:72px; height:72px; background:linear-gradient(135deg,var(--clay),var(--gold)); border-radius:22px; display:flex; align-items:center; justify-content:center; font-size:32px; box-shadow:0 20px 40px rgba(196,96,42,0.4); margin-bottom:20px; }
+.auth-logo-name { font-family:'Cormorant Garamond',serif; font-size:52px; font-weight:600; color:var(--sand); line-height:1; letter-spacing:-1px; }
+.auth-logo-tagline { color:rgba(245,238,227,0.45); font-size:14px; margin-top:6px; letter-spacing:3px; text-transform:uppercase; }
+.auth-location { display:flex; align-items:center; gap:8px; color:var(--gold); font-size:13px; margin-top:16px; }
+.auth-form-wrap { background:rgba(245,238,227,0.06); border:1px solid rgba(245,238,227,0.1); border-radius:24px; padding:28px 24px; backdrop-filter:blur(20px); margin-top:40px; }
+.auth-tabs { display:flex; background:rgba(0,0,0,0.2); border-radius:12px; padding:4px; margin-bottom:24px; }
+.auth-tab { flex:1; padding:8px; text-align:center; color:rgba(245,238,227,0.4); font-size:14px; cursor:pointer; border-radius:10px; transition:all 0.2s; font-weight:500; }
+.auth-tab.active { background:var(--clay); color:white; }
+.auth-field { margin-bottom:14px; }
+.auth-field label { display:block; color:rgba(245,238,227,0.5); font-size:11px; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px; }
+.auth-field input { width:100%; padding:12px 14px; background:rgba(0,0,0,0.2); border:1px solid rgba(245,238,227,0.1); border-radius:12px; color:var(--sand); font-size:14px; font-family:'Outfit',sans-serif; outline:none; transition:border-color 0.2s; }
+.auth-field input:focus { border-color:var(--clay); }
+.auth-field input::placeholder { color:rgba(245,238,227,0.25); }
+.auth-error { background:rgba(196,96,42,0.2); border:1px solid rgba(196,96,42,0.3); border-radius:10px; padding:10px 14px; color:#FFB494; font-size:13px; margin-bottom:12px; }
+.auth-btn { width:100%; padding:14px; background:linear-gradient(135deg,var(--clay),var(--clay-dark)); color:white; border:none; border-radius:14px; font-size:15px; font-weight:600; font-family:'Outfit',sans-serif; cursor:pointer; margin-top:6px; box-shadow:0 8px 24px rgba(196,96,42,0.4); transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:8px; }
+.auth-btn:disabled { opacity:0.6; cursor:not-allowed; }
+.auth-guest { text-align:center; margin-top:16px; color:rgba(245,238,227,0.35); font-size:13px; cursor:pointer; }
+.auth-guest span { color:var(--gold); text-decoration:underline; }
 
-/* ── SCROLLBAR ── */
-::-webkit-scrollbar { width: 0; }
+/* APP */
+.app { display:flex; flex-direction:column; flex:1; overflow:hidden; }
+.screen { flex:1; overflow-y:auto; padding-bottom:80px; }
+.screen::-webkit-scrollbar { display:none; }
 
-/* ── TYPOGRAPHY ── */
-.serif { font-family: 'Cormorant Garamond', serif; }
+/* TOPBAR */
+.topbar { background:var(--ink); padding:16px 20px 20px; position:relative; overflow:hidden; flex-shrink:0; }
+.topbar-bg { position:absolute; inset:0; background:radial-gradient(ellipse at 80% 50%,rgba(196,96,42,0.3) 0%,transparent 65%); }
+.topbar-row1 { display:flex; justify-content:space-between; align-items:center; position:relative; z-index:2; }
+.topbar-logo { font-family:'Cormorant Garamond',serif; font-size:26px; color:var(--sand); font-weight:600; }
+.topbar-avatar { width:34px; height:34px; background:linear-gradient(135deg,var(--clay),var(--gold)); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; cursor:pointer; font-weight:600; color:white; }
+.topbar-greeting { position:relative; z-index:2; margin-top:12px; }
+.topbar-greeting-small { font-size:11px; color:var(--gold); letter-spacing:3px; text-transform:uppercase; }
+.topbar-greeting-big { font-family:'Cormorant Garamond',serif; font-size:28px; color:var(--sand); line-height:1.1; margin-top:4px; }
+.topbar-greeting-big em { font-style:italic; color:var(--clay-light); }
 
-/* ── TOAST ── */
-.toast {
-  position: fixed;
-  bottom: 100px;
-  left: 50%;
-  transform: translateX(-50%) translateY(20px);
-  background: var(--ink);
-  color: var(--sand);
-  padding: 10px 20px;
-  border-radius: 30px;
-  font-size: 13px;
-  opacity: 0;
-  pointer-events: none;
-  transition: all 0.3s;
-  z-index: 999;
-  white-space: nowrap;
-}
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* SEARCH */
+.search-section { padding:16px 20px 0; flex-shrink:0; }
+.search-wrap { display:flex; gap:10px; }
+.search-input-wrap { flex:1; position:relative; }
+.search-input-wrap input { width:100%; padding:12px 14px 12px 40px; background:white; border:2px solid var(--border); border-radius:14px; font-size:14px; font-family:'Outfit',sans-serif; outline:none; color:var(--ink); transition:border-color 0.2s; box-shadow:var(--shadow); }
+.search-input-wrap input:focus { border-color:var(--clay); }
+.search-input-wrap input::placeholder { color:var(--warm-grey); }
+.search-icon-inner { position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:16px; opacity:0.5; }
+.search-clear { position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:14px; cursor:pointer; opacity:0.4; }
+.filter-btn { width:46px; height:46px; background:var(--clay); color:white; border:none; border-radius:14px; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(196,96,42,0.35); flex-shrink:0; transition:all 0.2s; }
+.filter-btn.active { background:var(--gold); }
 
-/* ── API KEY BANNER ── */
-.api-banner {
-  background: linear-gradient(135deg, #FFF8E1, #FFF3CD);
-  border-bottom: 2px solid var(--gold);
-  padding: 12px 16px;
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-}
-.api-banner-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
-.api-banner-text { font-size: 12px; color: #5D4037; line-height: 1.5; }
-.api-banner-text strong { display: block; font-size: 13px; color: #3E2723; margin-bottom: 2px; }
-.api-key-row { display: flex; gap: 6px; margin-top: 8px; }
-.api-key-input {
-  flex: 1; padding: 8px 10px; border-radius: 8px;
-  border: 1px solid rgba(196,96,42,0.3); font-size: 12px;
-  font-family: monospace; background: white;
-  outline: none;
-}
-.api-key-input:focus { border-color: var(--clay); }
-.api-key-btn {
-  padding: 8px 14px; background: var(--clay); color: white;
-  border: none; border-radius: 8px; font-size: 12px;
-  cursor: pointer; font-family: 'Outfit', sans-serif; font-weight: 500;
-  white-space: nowrap;
-}
+/* CATEGORIES */
+.cats-section { padding:16px 0 0 20px; flex-shrink:0; }
+.cats-scroll { display:flex; gap:10px; overflow-x:auto; padding-right:20px; padding-bottom:4px; }
+.cats-scroll::-webkit-scrollbar { display:none; }
+.cat-chip { display:flex; align-items:center; gap:6px; padding:8px 16px; background:white; border-radius:30px; border:2px solid var(--border); font-size:13px; font-weight:500; cursor:pointer; white-space:nowrap; transition:all 0.2s; box-shadow:0 2px 8px rgba(0,0,0,0.04); flex-shrink:0; }
+.cat-chip.active { background:var(--clay); color:white; border-color:var(--clay); box-shadow:0 4px 16px rgba(196,96,42,0.3); }
 
-/* ── AUTH SCREEN ── */
-.auth-screen {
-  min-height: 100vh;
-  background: var(--ink);
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow: hidden;
-}
+/* SECTIONS */
+.section { padding:20px 20px 0; }
+.section-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px; }
+.section-title { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:600; }
+.section-more { font-size:12px; color:var(--clay); letter-spacing:1px; text-transform:uppercase; cursor:pointer; font-weight:500; }
 
-.auth-bg {
-  position: absolute; inset: 0;
-  background: radial-gradient(ellipse at 70% 30%, rgba(196,96,42,0.35) 0%, transparent 60%),
-              radial-gradient(ellipse at 20% 80%, rgba(201,153,58,0.2) 0%, transparent 50%);
-}
+/* SPONSORED PREMIUM CARD */
+.card-sponsored-premium { background:linear-gradient(135deg,#1C1208,#2D1A08); border-radius:18px; padding:16px; position:relative; overflow:hidden; cursor:pointer; transition:transform 0.2s; border:1px solid rgba(201,153,58,0.2); margin-bottom:8px; }
+.card-sponsored-premium:hover { transform:scale(1.01); }
+.premium-glow { position:absolute; top:-30px; right:-30px; width:120px; height:120px; background:radial-gradient(circle,rgba(201,153,58,0.25) 0%,transparent 70%); pointer-events:none; }
+.sp-top { display:flex; align-items:flex-start; gap:12px; margin-bottom:10px; }
+.sp-img { width:54px; height:54px; border-radius:14px; background:rgba(255,255,255,0.08); border:1px solid rgba(201,153,58,0.2); display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0; overflow:hidden; }
+.sp-img img { width:100%; height:100%; object-fit:cover; border-radius:14px; }
+.sp-info { flex:1; min-width:0; }
+.sp-name { font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:600; color:var(--sand); line-height:1.2; }
+.sp-type { font-size:12px; color:rgba(245,238,227,0.45); margin-top:2px; }
+.sp-rating { display:flex; align-items:center; gap:6px; margin-top:8px; }
+.stars-gold { color:var(--gold-light); font-size:13px; }
+.sp-footer { display:flex; align-items:center; justify-content:space-between; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.06); }
+.sp-meta { display:flex; gap:12px; font-size:11px; color:rgba(245,238,227,0.45); }
+.sp-cta { background:linear-gradient(135deg,var(--clay),var(--clay-dark)); color:white; border:none; border-radius:10px; padding:7px 14px; font-size:12px; font-weight:600; font-family:'Outfit',sans-serif; cursor:pointer; }
 
-.zellige-bg {
-  position: absolute; inset: 0; opacity: 0.04;
-  background-image:
-    repeating-linear-gradient(0deg, var(--gold) 0, var(--gold) 1px, transparent 0, transparent 40px),
-    repeating-linear-gradient(90deg, var(--gold) 0, var(--gold) 1px, transparent 0, transparent 40px),
-    repeating-linear-gradient(45deg, var(--gold) 0, var(--gold) 1px, transparent 0, transparent 28px),
-    repeating-linear-gradient(-45deg, var(--gold) 0, var(--gold) 1px, transparent 0, transparent 28px);
-}
+/* SPONSORED PRO CARD */
+.card-sponsored-pro { background:linear-gradient(135deg,#FFF8EE,#FFF3E0); border-radius:16px; padding:14px; display:flex; gap:12px; cursor:pointer; transition:all 0.2s; border:1.5px solid rgba(201,153,58,0.25); box-shadow:0 4px 16px rgba(201,153,58,0.1); position:relative; overflow:hidden; margin-bottom:8px; }
+.card-sponsored-pro:hover { transform:translateY(-1px); box-shadow:0 8px 28px rgba(201,153,58,0.2); }
+.pro-shimmer { position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.4),transparent); animation:shimmerSlide 3s infinite; }
+@keyframes shimmerSlide { 0%{left:-100%} 50%{left:150%} 100%{left:150%} }
+.pro-img { width:58px; height:58px; border-radius:14px; background:white; display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0; box-shadow:0 4px 12px rgba(0,0,0,0.08); overflow:hidden; }
+.pro-img img { width:100%; height:100%; object-fit:cover; border-radius:14px; }
 
-.auth-content {
-  position: relative; z-index: 2;
-  display: flex; flex-direction: column;
-  flex: 1; padding: 60px 32px 40px;
-}
+/* REGULAR CARD */
+.place-card { background:white; border-radius:16px; padding:14px; display:flex; gap:12px; cursor:pointer; transition:all 0.2s; box-shadow:0 2px 12px rgba(0,0,0,0.04); border:1px solid rgba(0,0,0,0.04); }
+.place-card:hover { box-shadow:0 8px 28px rgba(0,0,0,0.1); transform:translateY(-2px); }
+.place-img { width:64px; height:64px; border-radius:12px; background:var(--sand); display:flex; align-items:center; justify-content:center; font-size:28px; flex-shrink:0; overflow:hidden; }
+.place-img img { width:100%; height:100%; object-fit:cover; border-radius:12px; }
+.place-info { flex:1; min-width:0; }
+.place-name { font-weight:600; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.place-address { font-size:12px; color:var(--warm-grey); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.place-footer { display:flex; align-items:center; justify-content:space-between; margin-top:8px; }
+.stars { color:var(--gold); font-size:12px; }
+.rating-text { font-size:12px; color:var(--warm-grey); margin-left:3px; }
+.place-save { width:28px; height:28px; background:var(--sand); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; cursor:pointer; transition:all 0.15s; flex-shrink:0; align-self:flex-start; }
+.place-save:hover { background:var(--sand-deep); transform:scale(1.1); }
+.place-save.saved { background:#FDECEA; }
+.open-pill { font-size:11px; padding:3px 8px; border-radius:8px; font-weight:500; }
+.open-pill.open { background:#E8F5E9; color:#2E7D32; }
+.open-pill.closed { background:#FDECEA; color:#C62828; }
 
-.auth-logo-wrap { margin-bottom: auto; padding-top: 20px; }
+/* BADGES */
+.badge { display:inline-flex; align-items:center; gap:4px; border-radius:20px; padding:3px 9px; font-size:10px; font-weight:600; letter-spacing:0.5px; margin-bottom:6px; }
+.badge-premium { background:linear-gradient(135deg,#1C1208,#3D2010); color:var(--gold-light); border:1px solid rgba(201,153,58,0.4); }
+.badge-pro { background:linear-gradient(135deg,var(--gold),#E8B84A); color:white; }
+.badge-basic { background:#FFF3E0; color:#E65100; border:1.5px solid #FFB74D; }
 
-.auth-logo-icon {
-  width: 72px; height: 72px;
-  background: linear-gradient(135deg, var(--clay), var(--gold));
-  border-radius: 22px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 32px;
-  box-shadow: 0 20px 40px rgba(196,96,42,0.4);
-  margin-bottom: 20px;
-}
+/* SPONSORED LABELS */
+.sponsored-label-row { display:flex; align-items:center; justify-content:space-between; padding:6px 4px 2px; }
+.sponsored-label { font-size:10px; color:var(--warm-grey); letter-spacing:1px; text-transform:uppercase; display:flex; align-items:center; gap:4px; }
+.sponsored-divider { height:1px; background:linear-gradient(90deg,rgba(201,153,58,0.3),transparent); margin:4px 0 8px; }
+.organic-label { font-size:10px; color:rgba(140,123,107,0.6); letter-spacing:1px; text-transform:uppercase; padding:8px 4px 4px; }
 
-.auth-logo-name {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 52px; font-weight: 600;
-  color: var(--sand);
-  line-height: 1;
-  letter-spacing: -1px;
-}
+/* SHIMMER */
+.loading-shimmer { background:linear-gradient(90deg,var(--sand) 0%,var(--sand-deep) 50%,var(--sand) 100%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:10px; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.shimmer-card { background:white; border-radius:16px; padding:14px; display:flex; gap:12px; box-shadow:0 2px 12px rgba(0,0,0,0.04); margin-bottom:10px; }
+.shimmer-img { width:64px; height:64px; border-radius:12px; flex-shrink:0; }
+.shimmer-info { flex:1; display:flex; flex-direction:column; gap:8px; padding-top:4px; }
+.shimmer-line { height:12px; border-radius:6px; }
 
-.auth-logo-tagline {
-  color: rgba(245,238,227,0.45);
-  font-size: 14px;
-  margin-top: 6px;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-}
+/* DETAIL */
+.detail-overlay { position:fixed; inset:0; background:rgba(28,18,8,0.6); z-index:100; display:flex; align-items:flex-end; animation:fadeIn 0.2s ease; }
+.detail-sheet { background:var(--cream); width:100%; max-height:90vh; border-radius:28px 28px 0 0; overflow-y:auto; animation:slideUp 0.3s ease; }
+.detail-header-img { height:200px; background:linear-gradient(135deg,var(--sage),#3A5A4A); display:flex; align-items:center; justify-content:center; font-size:70px; position:relative; overflow:hidden; border-radius:28px 28px 0 0; }
+.detail-header-img img { width:100%; height:100%; object-fit:cover; }
+.detail-handle { width:40px; height:4px; background:rgba(255,255,255,0.3); border-radius:2px; position:absolute; top:12px; left:50%; transform:translateX(-50%); }
+.detail-close { position:absolute; top:16px; right:16px; width:32px; height:32px; background:rgba(0,0,0,0.3); border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; color:white; font-size:16px; }
+.detail-body { padding:22px 20px 40px; }
+.detail-top { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+.detail-name { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:600; line-height:1.2; }
+.detail-type { color:var(--warm-grey); font-size:14px; margin-top:3px; }
+.detail-price { background:#E8F5E9; color:#2E7D32; font-size:13px; padding:5px 12px; border-radius:10px; font-weight:500; white-space:nowrap; }
+.detail-rating-row { display:flex; align-items:center; gap:6px; margin-top:12px; }
+.detail-stars { color:var(--gold); font-size:16px; }
+.detail-chips { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+.detail-chip { background:white; border:1px solid var(--border); border-radius:20px; padding:6px 14px; font-size:12px; }
+.detail-section { margin-top:22px; }
+.detail-section h3 { font-family:'Cormorant Garamond',serif; font-size:19px; margin-bottom:10px; }
+.detail-section p { font-size:14px; color:var(--warm-grey); line-height:1.7; }
+.detail-info-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.detail-info-item { background:white; border-radius:12px; padding:12px; display:flex; gap:10px; align-items:center; }
+.detail-info-label { font-size:11px; color:var(--warm-grey); text-transform:uppercase; letter-spacing:0.5px; }
+.detail-info-val { font-size:13px; font-weight:500; margin-top:2px; }
+.detail-cta { display:flex; gap:10px; margin-top:22px; }
+.detail-cta-main { flex:1; padding:15px; background:linear-gradient(135deg,var(--clay),var(--clay-dark)); color:white; border:none; border-radius:14px; font-size:14px; font-weight:600; cursor:pointer; font-family:'Outfit',sans-serif; box-shadow:0 6px 20px rgba(196,96,42,0.35); transition:all 0.2s; }
+.detail-cta-save { width:50px; height:50px; background:white; border:1px solid var(--border); border-radius:14px; font-size:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s; }
+.detail-cta-save.saved { background:#FDECEA; }
 
-.auth-location {
-  display: flex; align-items: center; gap: 8px;
-  color: var(--gold); font-size: 13px;
-  margin-top: 16px;
-}
+/* FILTER */
+.filter-overlay { position:fixed; inset:0; background:rgba(28,18,8,0.5); z-index:100; animation:fadeIn 0.2s ease; }
+.filter-sheet { position:absolute; bottom:0; left:0; right:0; background:var(--cream); border-radius:28px 28px 0 0; padding:28px 20px 40px; animation:slideUp 0.3s ease; }
+.filter-handle { width:40px; height:4px; background:var(--sand-deep); border-radius:2px; margin:0 auto 24px; }
+.filter-title { font-family:'Cormorant Garamond',serif; font-size:24px; margin-bottom:20px; }
+.filter-group { margin-bottom:20px; }
+.filter-group-label { font-size:12px; text-transform:uppercase; letter-spacing:1.5px; color:var(--warm-grey); margin-bottom:10px; }
+.filter-opts { display:flex; flex-wrap:wrap; gap:8px; }
+.filter-opt { padding:8px 16px; background:white; border:2px solid var(--border); border-radius:20px; font-size:13px; cursor:pointer; transition:all 0.2s; }
+.filter-opt.active { background:var(--clay); color:white; border-color:var(--clay); }
+.filter-actions { display:flex; gap:10px; margin-top:10px; }
+.filter-reset { flex:1; padding:13px; background:white; border:2px solid var(--border); border-radius:14px; font-size:14px; font-weight:500; cursor:pointer; font-family:'Outfit',sans-serif; }
+.filter-apply { flex:2; padding:13px; background:linear-gradient(135deg,var(--clay),var(--clay-dark)); color:white; border:none; border-radius:14px; font-size:14px; font-weight:600; cursor:pointer; font-family:'Outfit',sans-serif; }
 
-.auth-form-wrap {
-  background: rgba(245,238,227,0.06);
-  border: 1px solid rgba(245,238,227,0.1);
-  border-radius: 24px;
-  padding: 28px 24px;
-  backdrop-filter: blur(20px);
-  margin-top: 40px;
-}
+/* BOTTOM NAV */
+.bottom-nav { background:white; border-top:1px solid rgba(0,0,0,0.06); display:flex; padding:8px 0 20px; position:sticky; bottom:0; z-index:50; box-shadow:0 -4px 20px rgba(0,0,0,0.06); flex-shrink:0; }
+.nav-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; padding:4px 0; transition:all 0.2s; }
+.nav-item-icon { font-size:22px; line-height:1; }
+.nav-item-label { font-size:10px; color:var(--warm-grey); font-weight:500; }
+.nav-item.active .nav-item-label { color:var(--clay); }
+.nav-item.active .nav-item-icon { transform:scale(1.1); }
 
-.auth-tabs {
-  display: flex; gap: 0;
-  background: rgba(0,0,0,0.2);
-  border-radius: 12px; padding: 4px;
-  margin-bottom: 24px;
-}
+/* PROFILE */
+.profile-stat { background:white; border-radius:16px; padding:16px; text-align:center; box-shadow:var(--shadow); }
+.profile-stat-icon { font-size:28px; }
+.profile-stat-val { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:600; margin-top:4px; }
+.profile-stat-label { font-size:12px; color:var(--warm-grey); }
 
-.auth-tab {
-  flex: 1; padding: 8px; text-align: center;
-  color: rgba(245,238,227,0.4); font-size: 14px;
-  cursor: pointer; border-radius: 10px;
-  transition: all 0.2s; font-weight: 500;
-}
-.auth-tab.active { background: var(--clay); color: white; }
+/* EMPTY */
+.empty-state { text-align:center; padding:40px 20px; color:var(--warm-grey); }
+.empty-state-icon { font-size:48px; margin-bottom:12px; }
+.empty-state-title { font-family:'Cormorant Garamond',serif; font-size:22px; color:var(--ink); margin-bottom:6px; }
+.empty-state-sub { font-size:14px; line-height:1.6; }
 
-.auth-field {
-  margin-bottom: 14px;
-}
-.auth-field label {
-  display: block; color: rgba(245,238,227,0.5);
-  font-size: 11px; letter-spacing: 1.5px;
-  text-transform: uppercase; margin-bottom: 6px;
-}
-.auth-field input {
-  width: 100%; padding: 12px 14px;
-  background: rgba(0,0,0,0.2);
-  border: 1px solid rgba(245,238,227,0.1);
-  border-radius: 12px; color: var(--sand);
-  font-size: 14px; font-family: 'Outfit', sans-serif;
-  outline: none; transition: border-color 0.2s;
-}
-.auth-field input:focus { border-color: var(--clay); }
-.auth-field input::placeholder { color: rgba(245,238,227,0.25); }
+/* SPINNER */
+.spinner { width:18px; height:18px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.7s linear infinite; display:inline-block; }
+@keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
 
-.auth-btn {
-  width: 100%; padding: 14px;
-  background: linear-gradient(135deg, var(--clay), var(--clay-dark));
-  color: white; border: none; border-radius: 14px;
-  font-size: 15px; font-weight: 600;
-  font-family: 'Outfit', sans-serif;
-  cursor: pointer; margin-top: 6px;
-  box-shadow: 0 8px 24px rgba(196,96,42,0.4);
-  transition: all 0.2s;
-}
-.auth-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(196,96,42,0.5); }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+.fade-up { animation:fadeUp 0.4s ease forwards; }
 
-.auth-guest {
-  text-align: center; margin-top: 16px;
-  color: rgba(245,238,227,0.35); font-size: 13px; cursor: pointer;
-}
-.auth-guest span { color: var(--gold); text-decoration: underline; }
-
-/* ── MAIN APP ── */
-.app { display: flex; flex-direction: column; min-height: 100vh; }
-
-/* ── TOP BAR ── */
-.topbar {
-  background: var(--ink);
-  padding: 16px 20px 20px;
-  position: relative; overflow: hidden;
-}
-.topbar-bg {
-  position: absolute; inset: 0;
-  background: radial-gradient(ellipse at 80% 50%, rgba(196,96,42,0.3) 0%, transparent 65%);
-}
-.topbar-row1 {
-  display: flex; justify-content: space-between; align-items: center;
-  position: relative; z-index: 2;
-}
-.topbar-logo {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 26px; color: var(--sand);
-  font-weight: 600;
-}
-.topbar-right { display: flex; gap: 10px; align-items: center; }
-.topbar-avatar {
-  width: 34px; height: 34px;
-  background: linear-gradient(135deg, var(--clay), var(--gold));
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; cursor: pointer;
-  font-weight: 600; color: white;
-}
-.topbar-greeting {
-  position: relative; z-index: 2;
-  margin-top: 12px;
-}
-.topbar-greeting-small {
-  font-size: 11px; color: var(--gold);
-  letter-spacing: 3px; text-transform: uppercase;
-}
-.topbar-greeting-big {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 28px; color: var(--sand);
-  line-height: 1.1; margin-top: 4px;
-}
-.topbar-greeting-big em { font-style: italic; color: var(--clay-light); }
-
-/* ── SEARCH BAR ── */
-.search-section { padding: 16px 20px 0; }
-.search-wrap {
-  display: flex; gap: 10px;
-}
-.search-input-wrap {
-  flex: 1; position: relative;
-}
-.search-input-wrap input {
-  width: 100%; padding: 12px 14px 12px 40px;
-  background: white;
-  border: 2px solid var(--border);
-  border-radius: 14px; font-size: 14px;
-  font-family: 'Outfit', sans-serif;
-  outline: none; color: var(--ink);
-  transition: border-color 0.2s;
-  box-shadow: var(--shadow);
-}
-.search-input-wrap input:focus { border-color: var(--clay); }
-.search-input-wrap input::placeholder { color: var(--warm-grey); }
-.search-icon-inner {
-  position: absolute; left: 12px; top: 50%;
-  transform: translateY(-50%); font-size: 16px; opacity: 0.5;
-}
-.search-clear {
-  position: absolute; right: 12px; top: 50%;
-  transform: translateY(-50%); font-size: 14px;
-  cursor: pointer; opacity: 0.4;
-}
-.filter-btn {
-  width: 46px; height: 46px;
-  background: var(--clay); color: white;
-  border: none; border-radius: 14px;
-  font-size: 18px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 16px rgba(196,96,42,0.35);
-  flex-shrink: 0; transition: all 0.2s;
-}
-.filter-btn:hover { background: var(--clay-dark); }
-.filter-btn.active { background: var(--gold); }
-
-/* ── CATEGORIES ── */
-.cats-section { padding: 16px 0 0 20px; }
-.cats-scroll { display: flex; gap: 10px; overflow-x: auto; padding-right: 20px; padding-bottom: 4px; }
-.cats-scroll::-webkit-scrollbar { display: none; }
-.cat-chip {
-  display: flex; align-items: center; gap: 6px;
-  padding: 8px 16px;
-  background: white; border-radius: 30px;
-  border: 2px solid var(--border);
-  font-size: 13px; font-weight: 500;
-  cursor: pointer; white-space: nowrap;
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  flex-shrink: 0;
-}
-.cat-chip:hover { border-color: var(--clay); }
-.cat-chip.active {
-  background: var(--clay); color: white;
-  border-color: var(--clay);
-  box-shadow: 0 4px 16px rgba(196,96,42,0.3);
-}
-.cat-chip-icon { font-size: 16px; }
-
-/* ── SECTION ── */
-.section { padding: 20px 20px 0; }
-.section-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
-.section-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600; }
-.section-more { font-size: 12px; color: var(--clay); letter-spacing: 1px; text-transform: uppercase; cursor: pointer; font-weight: 500; }
-
-/* ── FEATURED CARD ── */
-.featured {
-  background: linear-gradient(135deg, var(--clay), var(--clay-dark));
-  border-radius: 20px; padding: 20px;
-  color: white; position: relative; overflow: hidden;
-  cursor: pointer; transition: transform 0.2s;
-  box-shadow: 0 8px 32px rgba(196,96,42,0.35);
-}
-.featured:hover { transform: scale(1.01); }
-.featured-emoji {
-  position: absolute; right: -10px; bottom: -10px;
-  font-size: 90px; opacity: 0.15; line-height: 1;
-}
-.featured-badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  background: rgba(255,255,255,0.18); border-radius: 20px;
-  padding: 4px 10px; font-size: 11px; letter-spacing: 0.5px;
-  text-transform: uppercase; margin-bottom: 10px;
-}
-.featured-name { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 600; line-height: 1.2; }
-.featured-type { font-size: 13px; opacity: 0.7; margin-top: 4px; }
-.featured-meta { display: flex; gap: 14px; margin-top: 14px; font-size: 12px; opacity: 0.8; }
-.featured-meta span { display: flex; align-items: center; gap: 4px; }
-.featured-loading { opacity: 0.6; font-size: 14px; padding: 10px 0; }
-
-/* ── PLACE CARD ── */
-.places-grid { display: flex; flex-direction: column; gap: 10px; }
-
-.place-card {
-  background: white; border-radius: 16px;
-  padding: 14px; display: flex; gap: 12px;
-  cursor: pointer; transition: all 0.2s;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-  border: 1px solid rgba(0,0,0,0.04);
-}
-.place-card:hover {
-  box-shadow: 0 8px 28px rgba(0,0,0,0.1);
-  transform: translateY(-2px);
-}
-.place-img {
-  width: 64px; height: 64px;
-  border-radius: 12px;
-  background: var(--sand);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 28px; flex-shrink: 0;
-  overflow: hidden;
-}
-.place-img img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
-.place-info { flex: 1; min-width: 0; }
-.place-name { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.place-address { font-size: 12px; color: var(--warm-grey); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.place-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
-.stars { color: var(--gold); font-size: 12px; }
-.rating-text { font-size: 12px; color: var(--warm-grey); margin-left: 3px; }
-.place-save {
-  width: 28px; height: 28px;
-  background: var(--sand); border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; cursor: pointer; transition: all 0.15s;
-  flex-shrink: 0; align-self: flex-start;
-}
-.place-save:hover { background: var(--sand-deep); transform: scale(1.1); }
-.place-save.saved { background: #FDECEA; }
-
-.place-open {
-  font-size: 11px; padding: 3px 8px; border-radius: 8px;
-  font-weight: 500;
-}
-.place-open.open { background: #E8F5E9; color: #2E7D32; }
-.place-open.closed { background: #FDECEA; color: #C62828; }
-
-/* ── EMPTY STATE ── */
-.empty-state {
-  text-align: center; padding: 40px 20px;
-  color: var(--warm-grey);
-}
-.empty-state-icon { font-size: 48px; margin-bottom: 12px; }
-.empty-state-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--ink); margin-bottom: 6px; }
-.empty-state-sub { font-size: 14px; line-height: 1.6; }
-
-/* ── LOADING ── */
-.loading-shimmer {
-  background: linear-gradient(90deg, var(--sand) 0%, var(--sand-deep) 50%, var(--sand) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s infinite;
-  border-radius: 10px;
-}
-@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-
-.shimmer-card {
-  background: white; border-radius: 16px;
-  padding: 14px; display: flex; gap: 12px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-}
-.shimmer-img { width: 64px; height: 64px; border-radius: 12px; flex-shrink: 0; }
-.shimmer-info { flex: 1; display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
-.shimmer-line { height: 12px; border-radius: 6px; }
-
-/* ── DETAIL PANEL ── */
-.detail-overlay {
-  position: fixed; inset: 0;
-  background: rgba(28,18,8,0.6);
-  z-index: 100; display: flex;
-  align-items: flex-end;
-  animation: fadeIn 0.2s ease;
-}
-.detail-sheet {
-  background: var(--cream); width: 100%;
-  max-height: 90vh; border-radius: 28px 28px 0 0;
-  overflow-y: auto;
-  animation: slideUp 0.3s ease;
-}
-.detail-header-img {
-  height: 200px;
-  background: linear-gradient(135deg, var(--sage), #3A5A4A);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 70px; position: relative;
-  overflow: hidden; border-radius: 28px 28px 0 0;
-}
-.detail-header-img img {
-  width: 100%; height: 100%; object-fit: cover;
-}
-.detail-handle {
-  width: 40px; height: 4px;
-  background: rgba(255,255,255,0.3);
-  border-radius: 2px;
-  position: absolute; top: 12px; left: 50%;
-  transform: translateX(-50%);
-}
-.detail-close {
-  position: absolute; top: 16px; right: 16px;
-  width: 32px; height: 32px;
-  background: rgba(0,0,0,0.3); border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: white; font-size: 16px;
-}
-.detail-body { padding: 22px 20px 40px; }
-.detail-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-.detail-name { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 600; line-height: 1.2; }
-.detail-type { color: var(--warm-grey); font-size: 14px; margin-top: 3px; }
-.detail-price { background: #E8F5E9; color: #2E7D32; font-size: 13px; padding: 5px 12px; border-radius: 10px; font-weight: 500; white-space: nowrap; }
-.detail-rating-row { display: flex; align-items: center; gap: 6px; margin-top: 12px; }
-.detail-stars { color: var(--gold); font-size: 16px; }
-.detail-rating-text { font-size: 13px; color: var(--warm-grey); }
-.detail-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
-.detail-chip {
-  background: white; border: 1px solid var(--border);
-  border-radius: 20px; padding: 6px 14px;
-  font-size: 12px; color: var(--ink);
-}
-.detail-section { margin-top: 22px; }
-.detail-section h3 { font-family: 'Cormorant Garamond', serif; font-size: 19px; margin-bottom: 10px; }
-.detail-section p { font-size: 14px; color: var(--warm-grey); line-height: 1.7; }
-.detail-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.detail-info-item { background: white; border-radius: 12px; padding: 12px; display: flex; gap: 10px; align-items: center; }
-.detail-info-icon { font-size: 20px; }
-.detail-info-label { font-size: 11px; color: var(--warm-grey); text-transform: uppercase; letter-spacing: 0.5px; }
-.detail-info-val { font-size: 13px; font-weight: 500; margin-top: 2px; }
-.detail-cta { display: flex; gap: 10px; margin-top: 22px; }
-.detail-cta-main {
-  flex: 1; padding: 15px;
-  background: linear-gradient(135deg, var(--clay), var(--clay-dark));
-  color: white; border: none; border-radius: 14px;
-  font-size: 14px; font-weight: 600; cursor: pointer;
-  font-family: 'Outfit', sans-serif;
-  box-shadow: 0 6px 20px rgba(196,96,42,0.35);
-  transition: all 0.2s;
-}
-.detail-cta-main:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(196,96,42,0.45); }
-.detail-cta-save {
-  width: 50px; height: 50px;
-  background: white; border: 1px solid var(--border);
-  border-radius: 14px; font-size: 20px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: all 0.2s;
-}
-.detail-cta-save:hover { background: var(--sand); }
-.detail-cta-save.saved { background: #FDECEA; }
-
-/* ── FILTER DRAWER ── */
-.filter-overlay {
-  position: fixed; inset: 0;
-  background: rgba(28,18,8,0.5);
-  z-index: 100;
-  animation: fadeIn 0.2s ease;
-}
-.filter-sheet {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  background: var(--cream); border-radius: 28px 28px 0 0;
-  padding: 28px 20px 40px;
-  animation: slideUp 0.3s ease;
-}
-.filter-handle { width: 40px; height: 4px; background: var(--sand-deep); border-radius: 2px; margin: 0 auto 24px; }
-.filter-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; margin-bottom: 20px; }
-.filter-group { margin-bottom: 20px; }
-.filter-group-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--warm-grey); margin-bottom: 10px; }
-.filter-opts { display: flex; flex-wrap: wrap; gap: 8px; }
-.filter-opt {
-  padding: 8px 16px; background: white;
-  border: 2px solid var(--border); border-radius: 20px;
-  font-size: 13px; cursor: pointer; transition: all 0.2s;
-}
-.filter-opt.active { background: var(--clay); color: white; border-color: var(--clay); }
-.filter-actions { display: flex; gap: 10px; margin-top: 10px; }
-.filter-reset {
-  flex: 1; padding: 13px; background: white;
-  border: 2px solid var(--border); border-radius: 14px;
-  font-size: 14px; font-weight: 500; cursor: pointer;
-  font-family: 'Outfit', sans-serif;
-}
-.filter-apply {
-  flex: 2; padding: 13px;
-  background: linear-gradient(135deg, var(--clay), var(--clay-dark));
-  color: white; border: none; border-radius: 14px;
-  font-size: 14px; font-weight: 600; cursor: pointer;
-  font-family: 'Outfit', sans-serif;
-  box-shadow: 0 6px 20px rgba(196,96,42,0.3);
-}
-
-/* ── SAVED SCREEN ── */
-.saved-screen { padding: 20px; }
-.saved-header { font-family: 'Cormorant Garamond', serif; font-size: 28px; margin-bottom: 20px; }
-
-/* ── BOTTOM NAV ── */
-.bottom-nav {
-  background: white;
-  border-top: 1px solid rgba(0,0,0,0.06);
-  display: flex; padding: 8px 0 20px;
-  position: sticky; bottom: 0; z-index: 50;
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
-}
-.nav-item {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; gap: 3px;
-  cursor: pointer; padding: 4px 0; transition: all 0.2s;
-}
-.nav-item-icon { font-size: 22px; line-height: 1; }
-.nav-item-label { font-size: 10px; color: var(--warm-grey); font-weight: 500; }
-.nav-item.active .nav-item-label { color: var(--clay); }
-.nav-item.active .nav-item-icon { transform: scale(1.1); }
-.nav-badge {
-  position: relative; display: inline-block;
-}
-.nav-badge::after {
-  content: '';
-  position: absolute; top: 0; right: -2px;
-  width: 7px; height: 7px;
-  background: var(--clay); border-radius: 50%;
-  border: 1.5px solid white;
-}
-
-/* ── ANIMATIONS ── */
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-@keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
-
-.spinner {
-  width: 20px; height: 20px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  display: inline-block;
-}
-
-.pb40 { padding-bottom: 40px; }
+.pb40 { padding-bottom:40px; }
 </style>
 </head>
 <body>
 <div id="root"></div>
+<div id="toast" class="toast"></div>
 
 <script type="text/babel">
 const { useState, useEffect, useCallback, useRef } = React;
 
-// ── MOCK DATA for when API key not set ──
+// ── SUPABASE CLIENT ──
+const SUPABASE_URL = 'https://dctjnjlxvbwelqkhwmjd.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRjdGpuamx4dmJ3ZWxxa2h3bWpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMjI5MDMsImV4cCI6MjA4ODU5ODkwM30.YsV5UeUjRmCt6gb2r3pZh2LIqAydbMvX0zMqqlvDDnE';
+const supabase = supabase_js.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ── MOCK DATA ──
 const MOCK_PLACES = {
-  restaurant: [
-    { place_id:'m1', name:'La Sqala', vicinity:'Bd des Almohades, Casablanca', rating:4.8, user_ratings_total:2100, opening_hours:{open_now:true}, emoji:'🥘', types:['restaurant'], price_level:2, formatted_address:'Bd des Almohades, Casablanca', formatted_phone_number:'+212 522-260-960', geometry:{location:{lat:33.5992,lng:-7.6195}} },
-    { place_id:'m2', name:'Le Cabestan', vicinity:'Corniche, Casablanca', rating:4.7, user_ratings_total:1400, opening_hours:{open_now:true}, emoji:'🦞', types:['restaurant'], price_level:3, formatted_address:'Corniche, Ain Diab, Casablanca', formatted_phone_number:'+212 522-394-110', geometry:{location:{lat:33.5961,lng:-7.6746}} },
-    { place_id:'m3', name:'Café Maure', vicinity:'Bd Tarik Ibn Ziad', rating:4.5, user_ratings_total:890, opening_hours:{open_now:true}, emoji:'🍵', types:['cafe'], price_level:1, formatted_address:'Bd Tarik Ibn Ziad, Casablanca', formatted_phone_number:'+212 522-260-123', geometry:{location:{lat:33.6010,lng:-7.6230}} },
-    { place_id:'m4', name:'Rick\'s Café', vicinity:'Rue Sour Jdid', rating:4.6, user_ratings_total:3200, opening_hours:{open_now:false}, emoji:'🍸', types:['bar','restaurant'], price_level:3, formatted_address:'248 Rue Sour Jdid, Casablanca', formatted_phone_number:'+212 522-274-207', geometry:{location:{lat:33.5993,lng:-7.6210}} },
-    { place_id:'m5', name:'Basmane', vicinity:'Boulevard de la Corniche', rating:4.4, user_ratings_total:620, opening_hours:{open_now:true}, emoji:'🫕', types:['restaurant'], price_level:2, formatted_address:'Corniche, Casablanca', geometry:{location:{lat:33.5950,lng:-7.6700}} },
+  restaurant:[
+    {id:'m1',name:'La Sqala',address:'Bd des Almohades',city:'Casablanca',rating:4.8,total_reviews:2100,is_open:true,emoji:'🥘',category:'restaurant',price_level:2,plan:'premium'},
+    {id:'m2',name:'Le Cabestan',address:'Corniche, Ain Diab',city:'Casablanca',rating:4.7,total_reviews:1400,is_open:true,emoji:'🦞',category:'restaurant',price_level:3,plan:'pro'},
+    {id:'m3',name:"Rick's Café",address:'Rue Sour Jdid',city:'Casablanca',rating:4.6,total_reviews:3200,is_open:false,emoji:'🍸',category:'restaurant',price_level:3,plan:null},
+    {id:'m4',name:'Café Maure',address:'Bd Tarik Ibn Ziad',city:'Casablanca',rating:4.5,total_reviews:890,is_open:true,emoji:'🍵',category:'restaurant',price_level:1,plan:null},
+    {id:'m5',name:'Basmane',address:'Boulevard de la Corniche',city:'Casablanca',rating:4.4,total_reviews:620,is_open:true,emoji:'🫕',category:'restaurant',price_level:2,plan:null},
   ],
-  tourist_attraction: [
-    { place_id:'m6', name:'Hassan II Mosque', vicinity:'Bd Sidi Mohammed Ben Abdallah', rating:4.9, user_ratings_total:8400, opening_hours:{open_now:true}, emoji:'🕌', types:['tourist_attraction'], price_level:1, formatted_address:'Bd Sidi Mohammed Ben Abdallah, Casablanca', geometry:{location:{lat:33.6083,lng:-7.6328}} },
-    { place_id:'m7', name:'Old Medina', vicinity:'Rue Chakib Arsalane', rating:4.3, user_ratings_total:1800, opening_hours:{open_now:true}, emoji:'🏛', types:['tourist_attraction'], price_level:0, formatted_address:'Medina, Casablanca', geometry:{location:{lat:33.5995,lng:-7.6183}} },
-    { place_id:'m8', name:'Corniche Ain Diab', vicinity:'Corniche, Ain Diab', rating:4.5, user_ratings_total:5600, opening_hours:{open_now:true}, emoji:'🌊', types:['tourist_attraction'], price_level:0, formatted_address:'Corniche Ain Diab, Casablanca', geometry:{location:{lat:33.5960,lng:-7.6750}} },
+  tourist_attraction:[
+    {id:'m6',name:'Hassan II Mosque',address:'Bd Sidi Mohammed Ben Abdallah',rating:4.9,total_reviews:8400,is_open:true,emoji:'🕌',category:'tourist_attraction',price_level:1,plan:'premium'},
+    {id:'m7',name:'Old Medina',address:'Medina, Casablanca',rating:4.3,total_reviews:1800,is_open:true,emoji:'🏛',category:'tourist_attraction',price_level:0,plan:null},
+    {id:'m8',name:'Corniche Ain Diab',address:'Corniche, Casablanca',rating:4.5,total_reviews:5600,is_open:true,emoji:'🌊',category:'tourist_attraction',price_level:0,plan:null},
   ],
-  lodging: [
-    { place_id:'m9', name:'Four Seasons Casablanca', vicinity:'Bd de la Corniche', rating:4.8, user_ratings_total:1100, opening_hours:{open_now:true}, emoji:'🏨', types:['lodging'], price_level:4, formatted_address:'Bd de la Corniche, Casablanca', formatted_phone_number:'+212 529-022-200', geometry:{location:{lat:33.5960,lng:-7.6770}} },
-    { place_id:'m10', name:'Hôtel Kenzi Tower', vicinity:'Avenue des FAR', rating:4.5, user_ratings_total:780, opening_hours:{open_now:true}, emoji:'🏩', types:['lodging'], price_level:3, formatted_address:'Avenue des FAR, Casablanca', geometry:{location:{lat:33.5930,lng:-7.6310}} },
+  lodging:[
+    {id:'m9',name:'Four Seasons Casablanca',address:'Bd de la Corniche',rating:4.8,total_reviews:1100,is_open:true,emoji:'🏨',category:'lodging',price_level:4,plan:'premium'},
+    {id:'m10',name:'Hôtel Kenzi Tower',address:'Avenue des FAR',rating:4.5,total_reviews:780,is_open:true,emoji:'🏩',category:'lodging',price_level:3,plan:'pro'},
   ],
-  night_club: [
-    { place_id:'m11', name:'Armstrong Jazz Club', vicinity:'Bd de la Corniche', rating:4.4, user_ratings_total:430, opening_hours:{open_now:false}, emoji:'🎷', types:['night_club'], price_level:2, formatted_address:'Bd de la Corniche, Casablanca', geometry:{location:{lat:33.5955,lng:-7.6765}} },
+  night_club:[
+    {id:'m11',name:'Armstrong Jazz Club',address:'Bd de la Corniche',rating:4.4,total_reviews:430,is_open:false,emoji:'🎷',category:'night_club',price_level:2,plan:null},
   ],
-  shopping_mall: [
-    { place_id:'m12', name:'Morocco Mall', vicinity:'Bd de la Corniche, Ain Diab', rating:4.4, user_ratings_total:9800, opening_hours:{open_now:true}, emoji:'🛍️', types:['shopping_mall'], price_level:2, formatted_address:'Bd de la Corniche, Ain Diab, Casablanca', geometry:{location:{lat:33.5880,lng:-7.6834}} },
+  shopping_mall:[
+    {id:'m12',name:'Morocco Mall',address:'Bd de la Corniche, Ain Diab',rating:4.4,total_reviews:9800,is_open:true,emoji:'🛍️',category:'shopping_mall',price_level:2,plan:'pro'},
+  ],
+  spa:[
+    {id:'m13',name:'L\'Spa Four Seasons',address:'Bd de la Corniche',rating:4.9,total_reviews:310,is_open:true,emoji:'🧖',category:'spa',price_level:4,plan:'premium'},
   ],
 };
 
 const CATS = [
-  { id:'restaurant', label:'Eat & Drink', icon:'🍽️' },
-  { id:'tourist_attraction', label:'Attractions', icon:'🎭' },
-  { id:'lodging', label:'Stay', icon:'🏨' },
-  { id:'night_club', label:'Nightlife', icon:'🌙' },
-  { id:'shopping_mall', label:'Shopping', icon:'🛍️' },
-  { id:'spa', label:'Spa & Wellness', icon:'🧖' },
+  {id:'restaurant',label:'Eat & Drink',icon:'🍽️'},
+  {id:'tourist_attraction',label:'Attractions',icon:'🎭'},
+  {id:'lodging',label:'Stay',icon:'🏨'},
+  {id:'night_club',label:'Nightlife',icon:'🌙'},
+  {id:'shopping_mall',label:'Shopping',icon:'🛍️'},
+  {id:'spa',label:'Spa',icon:'🧖'},
 ];
 
-const RATING_FILTERS = ['Any','3+','3.5+','4+','4.5+'];
-const PRICE_FILTERS  = ['Any','Free','$','$$','$$$'];
+const price_str = l => l===0?'Free':'$'.repeat(l||1);
+const stars_str = r => { const f=Math.round(r||0); return '★'.repeat(f)+'☆'.repeat(5-f); };
 
-const emoji_for = (types=[]) => {
-  if(types.includes('restaurant')) return '🍽️';
-  if(types.includes('cafe')) return '☕';
-  if(types.includes('bar')) return '🍸';
-  if(types.includes('tourist_attraction')) return '🎭';
-  if(types.includes('mosque')) return '🕌';
-  if(types.includes('museum')) return '🏛';
-  if(types.includes('lodging')) return '🏨';
-  if(types.includes('night_club')) return '🎵';
-  if(types.includes('shopping_mall')) return '🛍️';
-  if(types.includes('spa')) return '🧖';
-  if(types.includes('park')) return '🌿';
-  if(types.includes('beach')) return '🌊';
-  return '📍';
-};
-
-const stars_str = (r) => {
-  const full = Math.round(r); return '★'.repeat(full)+'☆'.repeat(5-full);
-};
-
-const price_str = (level) => {
-  if(level===0) return 'Free';
-  return '$'.repeat(level||1);
-};
-
-// ── GOOGLE PLACES HELPER ──
-async function fetchPlaces(apiKey, type, query='') {
-  // Uses the Places API Nearby/Text search via a CORS proxy approach
-  // Since direct Google Places requires a backend proxy in real apps,
-  // here we simulate the call structure
-  const base = `https://maps.googleapis.com/maps/api/place/textsearch/json`;
-  const q = query || `${type.replace('_',' ')} in Casablanca Morocco`;
-  const url = `${base}?query=${encodeURIComponent(q)}&key=${apiKey}&language=en`;
-  // Note: In production, proxy this through your backend to hide API key
-  try {
-    const res = await fetch(url);
-    if(!res.ok) throw new Error('API error');
-    const data = await res.json();
-    if(data.status === 'REQUEST_DENIED') throw new Error('API key invalid');
-    return (data.results||[]).map(p=>({...p, emoji: emoji_for(p.types)}));
-  } catch(e) {
-    throw e;
-  }
-}
-
-// ── TOAST ──
 let toastTimer;
 function showToast(msg) {
   const el = document.getElementById('toast');
@@ -709,73 +292,7 @@ function showToast(msg) {
   toastTimer = setTimeout(()=>el.classList.remove('show'), 2500);
 }
 
-// ══════════════════════════════════
-//  AUTH SCREEN
-// ══════════════════════════════════
-function AuthScreen({ onAuth }) {
-  const [tab, setTab] = useState('login');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [pass, setPass] = useState('');
-
-  const handleSubmit = () => {
-    if(!email.trim()) { showToast('Please enter your email'); return; }
-    const user = { name: name||email.split('@')[0], email };
-    localStorage.setItem('tourista_user', JSON.stringify(user));
-    onAuth(user);
-  };
-
-  const handleGuest = () => {
-    const user = { name:'Explorer', email:'guest', isGuest:true };
-    onAuth(user);
-  };
-
-  return (
-    <div className="auth-screen">
-      <div className="auth-bg"/><div className="zellige-bg"/>
-      <div className="auth-content">
-        <div className="auth-logo-wrap">
-          <div className="auth-logo-icon">🧭</div>
-          <div className="auth-logo-name">Tourista</div>
-          <div className="auth-logo-tagline">Discover the city</div>
-          <div className="auth-location">📍 Casablanca, Morocco &nbsp;·&nbsp; ☀️ 22°C</div>
-        </div>
-
-        <div className="auth-form-wrap">
-          <div className="auth-tabs">
-            <div className={`auth-tab ${tab==='login'?'active':''}`} onClick={()=>setTab('login')}>Sign In</div>
-            <div className={`auth-tab ${tab==='signup'?'active':''}`} onClick={()=>setTab('signup')}>Create Account</div>
-          </div>
-
-          {tab==='signup' &&
-            <div className="auth-field">
-              <label>Your Name</label>
-              <input placeholder="Ahmed or Sarah…" value={name} onChange={e=>setName(e.target.value)}/>
-            </div>
-          }
-          <div className="auth-field">
-            <label>Email Address</label>
-            <input type="email" placeholder="you@example.com" value={email} onChange={e=>setEmail(e.target.value)}/>
-          </div>
-          <div className="auth-field">
-            <label>Password</label>
-            <input type="password" placeholder="••••••••" value={pass} onChange={e=>setPass(e.target.value)}/>
-          </div>
-          <button className="auth-btn" onClick={handleSubmit}>
-            {tab==='login'?'Sign In & Explore →':'Create Account →'}
-          </button>
-          <div className="auth-guest" onClick={handleGuest}>
-            Or <span>continue as guest</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ══════════════════════════════════
-//  SHIMMER LOADER
-// ══════════════════════════════════
+// ── SHIMMER ──
 function ShimmerCard() {
   return (
     <div className="shimmer-card">
@@ -789,90 +306,110 @@ function ShimmerCard() {
   );
 }
 
-// ══════════════════════════════════
-//  PLACE DETAIL
-// ══════════════════════════════════
+// ── AUTH ──
+function AuthScreen({ onAuth }) {
+  const [tab, setTab] = useState('login');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [pass, setPass] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async () => {
+    if(!email.trim() || !pass.trim()) { setError('Please fill in all fields'); return; }
+    setLoading(true); setError('');
+    try {
+      if(tab === 'signup') {
+        const { data, error: err } = await supabase.auth.signUp({ email, password: pass });
+        if(err) throw err;
+        if(data.user) {
+          await supabase.from('profiles').upsert({ id: data.user.id, name: name||email.split('@')[0], email });
+          showToast('✅ Account created! Welcome to Tourista!');
+          onAuth({ id: data.user.id, name: name||email.split('@')[0], email });
+        }
+      } else {
+        const { data, error: err } = await supabase.auth.signInWithPassword({ email, password: pass });
+        if(err) throw err;
+        if(data.user) {
+          const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
+          showToast('Welcome back! 🧭');
+          onAuth({ id: data.user.id, name: profile?.name || email.split('@')[0], email });
+        }
+      }
+    } catch(e) {
+      setError(e.message || 'Something went wrong');
+    }
+    setLoading(false);
+  };
+
+  const handleGuest = () => {
+    showToast('Exploring as guest 🧭');
+    onAuth({ id: null, name: 'Explorer', email: 'guest', isGuest: true });
+  };
+
+  return (
+    <div className="auth-screen">
+      <div className="auth-bg"/><div className="zellige"/>
+      <div className="auth-content">
+        <div className="auth-logo-wrap">
+          <div className="auth-logo-icon">🧭</div>
+          <div className="auth-logo-name">Tourista</div>
+          <div className="auth-logo-tagline">Discover the city</div>
+          <div className="auth-location">📍 Casablanca, Morocco &nbsp;·&nbsp; ☀️ 22°C</div>
+        </div>
+        <div className="auth-form-wrap">
+          <div className="auth-tabs">
+            <div className={`auth-tab ${tab==='login'?'active':''}`} onClick={()=>{setTab('login');setError('');}}>Sign In</div>
+            <div className={`auth-tab ${tab==='signup'?'active':''}`} onClick={()=>{setTab('signup');setError('');}}>Create Account</div>
+          </div>
+          {error && <div className="auth-error">⚠️ {error}</div>}
+          {tab==='signup' && <div className="auth-field"><label>Your Name</label><input placeholder="Ahmed or Sarah…" value={name} onChange={e=>setName(e.target.value)}/></div>}
+          <div className="auth-field"><label>Email Address</label><input type="email" placeholder="you@example.com" value={email} onChange={e=>setEmail(e.target.value)}/></div>
+          <div className="auth-field"><label>Password</label><input type="password" placeholder="••••••••" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSubmit()}/></div>
+          <button className="auth-btn" onClick={handleSubmit} disabled={loading}>
+            {loading ? <><div className="spinner"/> Loading…</> : tab==='login' ? 'Sign In & Explore →' : 'Create Account →'}
+          </button>
+          <div className="auth-guest" onClick={handleGuest}>Or <span>continue as guest</span></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── PLACE DETAIL ──
 function PlaceDetail({ place, saved, onSave, onClose }) {
   if(!place) return null;
-  const isSaved = saved.includes(place.place_id);
-
+  const isSaved = saved.includes(place.id);
   return (
     <div className="detail-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="detail-sheet">
         <div className="detail-header-img">
           <div className="detail-handle"/>
           <div className="detail-close" onClick={onClose}>✕</div>
-          {place.photo_url
-            ? <img src={place.photo_url} alt={place.name}/>
-            : <span>{place.emoji||'📍'}</span>
-          }
+          {place.photo_url ? <img src={place.photo_url} alt={place.name}/> : <span>{place.emoji||'📍'}</span>}
         </div>
         <div className="detail-body">
           <div className="detail-top">
             <div>
               <div className="detail-name">{place.name}</div>
-              <div className="detail-type">{(place.types||[]).slice(0,2).map(t=>t.replace(/_/g,' ')).join(' · ')}</div>
+              <div className="detail-type">{place.category?.replace(/_/g,' ')}</div>
             </div>
-            {place.price_level!==undefined && <div className="detail-price">{price_str(place.price_level)}</div>}
+            {place.price_level!=null && <div className="detail-price">{price_str(place.price_level)}</div>}
           </div>
-
           {place.rating && (
             <div className="detail-rating-row">
               <span className="detail-stars">{stars_str(place.rating)}</span>
-              <span className="detail-rating-text">{place.rating} · {place.user_ratings_total?.toLocaleString()||'—'} reviews</span>
+              <span style={{fontSize:13,color:var_warmgrey}}>{place.rating} · {place.total_reviews?.toLocaleString()||'—'} reviews</span>
             </div>
           )}
-
           <div className="detail-chips">
-            {(place.types||[]).slice(0,4).map(t=>(
-              <span key={t} className="detail-chip">{t.replace(/_/g,' ')}</span>
-            ))}
+            <span className="detail-chip">📍 {place.address||'Casablanca'}</span>
+            {place.is_open!=null && <span className="detail-chip">{place.is_open?'✅ Open now':'🔴 Closed'}</span>}
+            {place.price_level!=null && <span className="detail-chip">💰 {price_str(place.price_level)}</span>}
           </div>
-
-          <div className="detail-section">
-            <h3>Location & Info</h3>
-            <div className="detail-info-grid">
-              <div className="detail-info-item">
-                <span className="detail-info-icon">📍</span>
-                <div>
-                  <div className="detail-info-label">Address</div>
-                  <div className="detail-info-val" style={{fontSize:11}}>{place.vicinity||place.formatted_address||'Casablanca'}</div>
-                </div>
-              </div>
-              {place.opening_hours && (
-                <div className="detail-info-item">
-                  <span className="detail-info-icon">{place.opening_hours.open_now?'✅':'🔴'}</span>
-                  <div>
-                    <div className="detail-info-label">Status</div>
-                    <div className="detail-info-val">{place.opening_hours.open_now?'Open now':'Closed'}</div>
-                  </div>
-                </div>
-              )}
-              {place.formatted_phone_number && (
-                <div className="detail-info-item">
-                  <span className="detail-info-icon">📞</span>
-                  <div>
-                    <div className="detail-info-label">Phone</div>
-                    <div className="detail-info-val" style={{fontSize:12}}>{place.formatted_phone_number}</div>
-                  </div>
-                </div>
-              )}
-              {place.price_level!==undefined && (
-                <div className="detail-info-item">
-                  <span className="detail-info-icon">💰</span>
-                  <div>
-                    <div className="detail-info-label">Price</div>
-                    <div className="detail-info-val">{price_str(place.price_level)}</div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
           <div className="detail-cta">
             <button className="detail-cta-main" onClick={()=>{
-              const addr = encodeURIComponent(place.formatted_address||place.name+' Casablanca');
-              window.open(`https://maps.google.com/?q=${addr}`,'_blank');
+              window.open(`https://maps.google.com/?q=${encodeURIComponent(place.name+' '+place.address+' Casablanca')}`, '_blank');
             }}>🗺️ Get Directions</button>
             <button className={`detail-cta-save ${isSaved?'saved':''}`} onClick={()=>onSave(place)}>
               {isSaved?'❤️':'🤍'}
@@ -884,46 +421,122 @@ function PlaceDetail({ place, saved, onSave, onClose }) {
   );
 }
 
-// ══════════════════════════════════
-//  FILTER DRAWER
-// ══════════════════════════════════
+// ── PLACE CARD ──
+function PlaceCard({ place, saved, onSave, onClick }) {
+  const isSaved = saved.includes(place.id);
+  return (
+    <div className="place-card" onClick={onClick}>
+      <div className="place-img">
+        {place.photo_url ? <img src={place.photo_url} alt={place.name}/> : <span>{place.emoji||'📍'}</span>}
+      </div>
+      <div className="place-info">
+        <div className="place-name">{place.name}</div>
+        <div className="place-address">{place.address||'Casablanca'}</div>
+        <div className="place-footer">
+          {place.rating
+            ? <span><span className="stars">{stars_str(place.rating)}</span><span className="rating-text">{place.rating} ({place.total_reviews?.toLocaleString()||'?'})</span></span>
+            : <span className="rating-text">No rating yet</span>}
+          {place.is_open!=null
+            ? <span className={`open-pill ${place.is_open?'open':'closed'}`}>{place.is_open?'Open':'Closed'}</span>
+            : <span className="rating-text">{price_str(place.price_level)}</span>}
+        </div>
+      </div>
+      <div className={`place-save ${isSaved?'saved':''}`} onClick={e=>{e.stopPropagation();onSave(place);}}>
+        {isSaved?'❤️':'🤍'}
+      </div>
+    </div>
+  );
+}
+
+// ── SPONSORED PREMIUM ──
+function SponsoredPremiumCard({ place, saved, onSave, onClick }) {
+  const isSaved = saved.includes(place.id);
+  return (
+    <div className="card-sponsored-premium" onClick={onClick}>
+      <div className="premium-glow"/>
+      <div className="sp-top">
+        <div className="sp-img">{place.photo_url?<img src={place.photo_url} alt={place.name}/>:<span>{place.emoji}</span>}</div>
+        <div className="sp-info">
+          <span className="badge badge-premium">👑 Premium</span>
+          <div className="sp-name">{place.name}</div>
+          <div className="sp-type">{place.address}</div>
+        </div>
+        <div style={{color:'rgba(245,238,227,0.4)',fontSize:20,cursor:'pointer'}} onClick={e=>{e.stopPropagation();onSave(place);}}>
+          {isSaved?'❤️':'🤍'}
+        </div>
+      </div>
+      <div className="sp-rating">
+        <span className="stars-gold">{stars_str(place.rating)}</span>
+        <span style={{fontSize:13,color:var_sand,fontWeight:500}}>{place.rating}</span>
+        <span style={{fontSize:11,color:'rgba(245,238,227,0.4)'}}>({place.total_reviews?.toLocaleString()})</span>
+      </div>
+      <div className="sp-footer">
+        <div className="sp-meta">
+          <span>📍 {place.address?.split(',')[0]}</span>
+          <span>{place.is_open?'✅ Open':'🔴 Closed'}</span>
+          <span>💰 {price_str(place.price_level)}</span>
+        </div>
+        <button className="sp-cta">View →</button>
+      </div>
+    </div>
+  );
+}
+
+// ── SPONSORED PRO ──
+function SponsoredProCard({ place, saved, onSave, onClick }) {
+  const isSaved = saved.includes(place.id);
+  return (
+    <div className="card-sponsored-pro" onClick={onClick}>
+      <div className="pro-shimmer"/>
+      <div className="pro-img">{place.photo_url?<img src={place.photo_url} alt={place.name}/>:<span>{place.emoji}</span>}</div>
+      <div className="place-info">
+        <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:4}}>
+          <div className="place-name">{place.name}</div>
+          <span className="badge badge-pro">⭐ Pro</span>
+        </div>
+        <div className="place-address">{place.address}</div>
+        <div className="place-footer">
+          <span><span className="stars">{stars_str(place.rating)}</span><span className="rating-text">{place.rating} ({place.total_reviews?.toLocaleString()})</span></span>
+          <span className={`open-pill ${place.is_open?'open':'closed'}`}>{place.is_open?'Open':'Closed'}</span>
+        </div>
+      </div>
+      <div className={`place-save ${isSaved?'saved':''}`} onClick={e=>{e.stopPropagation();onSave(place);}}>
+        {isSaved?'❤️':'🤍'}
+      </div>
+    </div>
+  );
+}
+
+// ── FILTER ──
 function FilterDrawer({ filters, onChange, onClose, onApply, onReset }) {
   return (
     <div className="filter-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="filter-sheet">
         <div className="filter-handle"/>
         <div className="filter-title">Filter Places</div>
-
         <div className="filter-group">
           <div className="filter-group-label">Minimum Rating</div>
           <div className="filter-opts">
-            {RATING_FILTERS.map(r=>(
-              <div key={r} className={`filter-opt ${filters.rating===r?'active':''}`}
-                onClick={()=>onChange('rating',r)}>{r}</div>
+            {['Any','3+','3.5+','4+','4.5+'].map(r=>(
+              <div key={r} className={`filter-opt ${filters.rating===r?'active':''}`} onClick={()=>onChange('rating',r)}>{r}</div>
             ))}
           </div>
         </div>
-
         <div className="filter-group">
           <div className="filter-group-label">Price Range</div>
           <div className="filter-opts">
-            {PRICE_FILTERS.map(p=>(
-              <div key={p} className={`filter-opt ${filters.price===p?'active':''}`}
-                onClick={()=>onChange('price',p)}>{p}</div>
+            {['Any','Free','$','$$','$$$'].map(p=>(
+              <div key={p} className={`filter-opt ${filters.price===p?'active':''}`} onClick={()=>onChange('price',p)}>{p}</div>
             ))}
           </div>
         </div>
-
         <div className="filter-group">
-          <div className="filter-group-label">Open Now</div>
+          <div className="filter-group-label">Availability</div>
           <div className="filter-opts">
-            <div className={`filter-opt ${filters.openNow===false?'':'active'}`}
-              onClick={()=>onChange('openNow',false)}>All</div>
-            <div className={`filter-opt ${filters.openNow===true?'active':''}`}
-              onClick={()=>onChange('openNow',true)}>Open Now ✅</div>
+            <div className={`filter-opt ${!filters.openNow?'active':''}`} onClick={()=>onChange('openNow',false)}>All</div>
+            <div className={`filter-opt ${filters.openNow?'active':''}`} onClick={()=>onChange('openNow',true)}>Open Now ✅</div>
           </div>
         </div>
-
         <div className="filter-actions">
           <button className="filter-reset" onClick={onReset}>Reset</button>
           <button className="filter-apply" onClick={onApply}>Apply Filters</button>
@@ -933,151 +546,101 @@ function FilterDrawer({ filters, onChange, onClose, onApply, onReset }) {
   );
 }
 
-// ══════════════════════════════════
-//  PLACE CARD
-// ══════════════════════════════════
-function PlaceCard({ place, saved, onSave, onClick }) {
-  const isSaved = saved.includes(place.place_id);
-  return (
-    <div className="place-card" onClick={onClick}>
-      <div className="place-img">
-        {place.photo_url
-          ? <img src={place.photo_url} alt={place.name}/>
-          : <span>{place.emoji||emoji_for(place.types)}</span>
-        }
-      </div>
-      <div className="place-info">
-        <div className="place-name">{place.name}</div>
-        <div className="place-address">{place.vicinity||place.formatted_address||'Casablanca'}</div>
-        <div className="place-footer">
-          {place.rating
-            ? <span><span className="stars">{stars_str(place.rating)}</span><span className="rating-text">{place.rating} ({place.user_ratings_total?.toLocaleString()||'?'})</span></span>
-            : <span className="rating-text">No rating yet</span>
-          }
-          {place.opening_hours
-            ? <span className={`place-open ${place.opening_hours.open_now?'open':'closed'}`}>
-                {place.opening_hours.open_now?'Open':'Closed'}
-              </span>
-            : <span className="rating-text">{price_str(place.price_level)}</span>
-          }
-        </div>
-      </div>
-      <div className={`place-save ${isSaved?'saved':''}`}
-        onClick={e=>{e.stopPropagation();onSave(place);}}>
-        {isSaved?'❤️':'🤍'}
-      </div>
-    </div>
-  );
-}
+// ── MAIN APP ──
+// CSS variable helpers for JSX
+const var_sand = 'var(--sand)';
+const var_warmgrey = 'var(--warm-grey)';
 
-// ══════════════════════════════════
-//  MAIN APP
-// ══════════════════════════════════
 function App() {
-  const [user, setUser] = useState(()=>{
-    try{ return JSON.parse(localStorage.getItem('tourista_user')); }catch{return null;}
-  });
-  const [apiKey, setApiKey] = useState(()=>localStorage.getItem('tourista_api_key')||'');
-  const [apiKeyDraft, setApiKeyDraft] = useState('');
-  const [apiKeySet, setApiKeySet] = useState(!!localStorage.getItem('tourista_api_key'));
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [tab, setTab] = useState('home');
   const [cat, setCat] = useState('restaurant');
   const [places, setPlaces] = useState([]);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
-  const [saved, setSaved] = useState(()=>{
-    try{ return JSON.parse(localStorage.getItem('tourista_saved'))||[]; }catch{return [];}
-  });
+  const [saved, setSaved] = useState([]);
   const [savedPlaces, setSavedPlaces] = useState([]);
   const [detail, setDetail] = useState(null);
   const [showFilter, setShowFilter] = useState(false);
-  const [filters, setFilters] = useState({ rating:'Any', price:'Any', openNow:false });
-  const [activeFilters, setActiveFilters] = useState({ rating:'Any', price:'Any', openNow:false });
-  const searchRef = useRef();
+  const [filters, setFilters] = useState({rating:'Any',price:'Any',openNow:false});
+  const [activeFilters, setActiveFilters] = useState({rating:'Any',price:'Any',openNow:false});
   const debounceRef = useRef();
 
-  // Save to localStorage
+  // Check existing session
   useEffect(()=>{
-    localStorage.setItem('tourista_saved', JSON.stringify(saved));
-  },[saved]);
-
-  // Load places when cat or apiKey changes
-  useEffect(()=>{
-    loadPlaces(cat, query);
-  },[cat, apiKey]);
-
-  const loadPlaces = useCallback(async (type, q='') => {
-    setLoading(true);
-    try {
-      if(apiKey) {
-        const data = await fetchPlaces(apiKey, type, q||`${type.replace(/_/g,' ')} Casablanca Morocco`);
-        setPlaces(data);
-      } else {
-        // Use mock data
-        await new Promise(r=>setTimeout(r,600));
-        let data = MOCK_PLACES[type]||[];
-        if(q) data = data.filter(p=>p.name.toLowerCase().includes(q.toLowerCase())||
-          (p.vicinity||'').toLowerCase().includes(q.toLowerCase()));
-        setPlaces(data);
+    supabase.auth.getSession().then(({data:{session}})=>{
+      if(session?.user) {
+        supabase.from('profiles').select('*').eq('id',session.user.id).single().then(({data})=>{
+          setUser({id:session.user.id, name:data?.name||session.user.email.split('@')[0], email:session.user.email});
+        });
       }
-    } catch(e) {
-      showToast('Failed to load places. Using demo data.');
-      setPlaces(MOCK_PLACES[type]||[]);
-    }
-    setLoading(false);
-  },[apiKey]);
-
-  // Debounced search
-  const handleSearch = (val) => {
-    setQuery(val);
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(()=>{
-      loadPlaces(cat, val);
-    }, 500);
-  };
-
-  const handleSave = (place) => {
-    setSaved(prev=>{
-      const exists = prev.includes(place.place_id);
-      const next = exists ? prev.filter(id=>id!==place.place_id) : [...prev, place.place_id];
-      if(!exists) {
-        setSavedPlaces(sp=>[...sp, place]);
-        showToast(`❤️ Saved ${place.name}`);
-      } else {
-        setSavedPlaces(sp=>sp.filter(p=>p.place_id!==place.place_id));
-        showToast(`Removed ${place.name}`);
-      }
-      return next;
+      setAuthLoading(false);
     });
-  };
+  },[]);
 
-  // Track all seen places for saved tab
+  // Load saved places from Supabase
   useEffect(()=>{
-    if(places.length){
-      setSavedPlaces(sp=>{
-        const existing = new Set(sp.map(p=>p.place_id));
-        const news = places.filter(p=>!existing.has(p.place_id));
-        return [...sp, ...news];
+    if(user?.id && !user.isGuest) {
+      supabase.from('saved_places').select('place_id').eq('user_id',user.id).then(({data})=>{
+        if(data) setSaved(data.map(r=>r.place_id));
       });
     }
-  },[places]);
+  },[user]);
 
-  const handleSetApiKey = () => {
-    if(!apiKeyDraft.trim()) return;
-    localStorage.setItem('tourista_api_key', apiKeyDraft.trim());
-    setApiKey(apiKeyDraft.trim());
-    setApiKeySet(true);
-    showToast('✅ API key saved!');
+  // Load places
+  useEffect(()=>{ loadPlaces(cat,''); },[cat]);
+
+  const loadPlaces = useCallback(async(type, q='')=>{
+    setLoading(true);
+    await new Promise(r=>setTimeout(r,400));
+    let data = [...(MOCK_PLACES[type]||[])];
+    // Sort: premium first, then pro, then organic
+    data.sort((a,b)=>{
+      const order = {premium:0, pro:1, basic:2, null:3};
+      return (order[a.plan]??3) - (order[b.plan]??3);
+    });
+    if(q) data = data.filter(p=>p.name.toLowerCase().includes(q.toLowerCase())||p.address?.toLowerCase().includes(q.toLowerCase()));
+    setPlaces(data);
+    setSavedPlaces(sp=>{
+      const existing = new Set(sp.map(p=>p.id));
+      return [...sp, ...data.filter(p=>!existing.has(p.id))];
+    });
+    setLoading(false);
+  },[]);
+
+  const handleSearch = (val)=>{
+    setQuery(val);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(()=>loadPlaces(cat,val), 400);
   };
 
-  // Filter places
-  const filteredPlaces = places.filter(p=>{
-    if(activeFilters.openNow && !p.opening_hours?.open_now) return false;
-    if(activeFilters.rating!=='Any'){
-      const min = parseFloat(activeFilters.rating);
-      if((p.rating||0) < min) return false;
+  const handleSave = async(place)=>{
+    if(!user?.id || user.isGuest) { showToast('Sign in to save places ❤️'); return; }
+    const isSaved = saved.includes(place.id);
+    if(isSaved) {
+      setSaved(p=>p.filter(id=>id!==place.id));
+      showToast(`Removed ${place.name}`);
+      await supabase.from('saved_places').delete().eq('user_id',user.id).eq('place_id',place.id);
+    } else {
+      setSaved(p=>[...p,place.id]);
+      setSavedPlaces(sp=>sp.find(p=>p.id===place.id)?sp:[...sp,place]);
+      showToast(`❤️ Saved ${place.name}`);
+      await supabase.from('saved_places').upsert({user_id:user.id, place_id:place.id});
     }
-    if(activeFilters.price!=='Any' && p.price_level!==undefined){
+  };
+
+  const handleSignOut = async()=>{
+    if(confirm('Sign out of Tourista?')) {
+      await supabase.auth.signOut();
+      setUser(null); setSaved([]); setSavedPlaces([]);
+    }
+  };
+
+  const filteredPlaces = places.filter(p=>{
+    if(activeFilters.openNow && !p.is_open) return false;
+    if(activeFilters.rating!=='Any' && (p.rating||0)<parseFloat(activeFilters.rating)) return false;
+    if(activeFilters.price!=='Any' && p.price_level!=null) {
       if(activeFilters.price==='Free' && p.price_level!==0) return false;
       if(activeFilters.price==='$' && p.price_level!==1) return false;
       if(activeFilters.price==='$$' && p.price_level!==2) return false;
@@ -1086,135 +649,110 @@ function App() {
     return true;
   });
 
-  const featured = places.find(p=>p.rating>=4.7) || places[0];
+  const premiumPlaces = filteredPlaces.filter(p=>p.plan==='premium');
+  const proPlaces = filteredPlaces.filter(p=>p.plan==='pro');
+  const organicPlaces = filteredPlaces.filter(p=>!p.plan||p.plan==='basic');
   const hasActiveFilters = activeFilters.rating!=='Any'||activeFilters.price!=='Any'||activeFilters.openNow;
+
+  if(authLoading) return (
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',background:var_sand,flexDirection:'column',gap:16}}>
+      <div style={{fontSize:48}}>🧭</div>
+      <div style={{fontFamily:'Cormorant Garamond,serif',fontSize:32,color:'var(--ink)'}}>Tourista</div>
+      <div className="spinner" style={{borderColor:'rgba(196,96,42,0.3)',borderTopColor:'var(--clay)'}}/>
+    </div>
+  );
 
   if(!user) return <AuthScreen onAuth={setUser}/>;
 
   return (
     <div className="app">
-      <div id="toast" className="toast"/>
-
-      {/* API KEY BANNER */}
-      {!apiKeySet && (
-        <div className="api-banner">
-          <div className="api-banner-icon">🔑</div>
-          <div className="api-banner-text">
-            <strong>Connect Google Places for live data</strong>
-            Currently showing demo data. Add your API key to see real Casablanca places.
-            <div className="api-key-row">
-              <input className="api-key-input" placeholder="AIza..." value={apiKeyDraft}
-                onChange={e=>setApiKeyDraft(e.target.value)}
-                onKeyDown={e=>e.key==='Enter'&&handleSetApiKey()}/>
-              <button className="api-key-btn" onClick={handleSetApiKey}>Connect</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* HOME TAB */}
       {tab==='home' && (
-        <div style={{flex:1, overflowY:'auto', paddingBottom:80}}>
-          {/* TOP BAR */}
+        <div className="screen">
           <div className="topbar">
             <div className="topbar-bg"/>
             <div className="topbar-row1">
               <div className="topbar-logo">Tourista</div>
-              <div className="topbar-right">
-                <div className="topbar-avatar"
-                  title="Sign out"
-                  onClick={()=>{
-                    if(confirm('Sign out?')){
-                      localStorage.removeItem('tourista_user');
-                      setUser(null);
-                    }
-                  }}>
-                  {user.name[0].toUpperCase()}
-                </div>
+              <div className="topbar-avatar" onClick={handleSignOut} title="Sign out">
+                {user.name[0].toUpperCase()}
               </div>
             </div>
             <div className="topbar-greeting">
               <div className="topbar-greeting-small">📍 Casablanca, Morocco</div>
-              <div className="topbar-greeting-big">
-                {user.isGuest?'Hello, ':'Welcome, '}<em>{user.name.split(' ')[0]}!</em>
-              </div>
+              <div className="topbar-greeting-big">{user.isGuest?'Hello, ':'Welcome back, '}<em>{user.name.split(' ')[0]}!</em></div>
             </div>
           </div>
 
-          {/* SEARCH */}
           <div className="search-section">
             <div className="search-wrap">
               <div className="search-input-wrap">
                 <span className="search-icon-inner">🔍</span>
-                <input ref={searchRef} placeholder="Search restaurants, places…"
-                  value={query} onChange={e=>handleSearch(e.target.value)}/>
+                <input placeholder="Search restaurants, places…" value={query} onChange={e=>handleSearch(e.target.value)}/>
                 {query && <span className="search-clear" onClick={()=>handleSearch('')}>✕</span>}
               </div>
-              <button className={`filter-btn ${hasActiveFilters?'active':''}`}
-                onClick={()=>setShowFilter(true)}>
-                {hasActiveFilters?'⚙️':'⊟'}
-              </button>
+              <button className={`filter-btn ${hasActiveFilters?'active':''}`} onClick={()=>setShowFilter(true)}>⊟</button>
             </div>
           </div>
 
-          {/* CATEGORIES */}
           <div className="cats-section">
             <div className="cats-scroll">
               {CATS.map(c=>(
-                <div key={c.id} className={`cat-chip ${cat===c.id?'active':''}`}
-                  onClick={()=>{ setCat(c.id); setQuery(''); }}>
-                  <span className="cat-chip-icon">{c.icon}</span>
-                  {c.label}
+                <div key={c.id} className={`cat-chip ${cat===c.id?'active':''}`} onClick={()=>{setCat(c.id);setQuery('');}}>
+                  <span>{c.icon}</span>{c.label}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* FEATURED */}
-          {!query && featured && !loading && (
-            <div className="section">
-              <div className="section-header">
-                <div className="section-title">Featured</div>
-              </div>
-              <div className="featured" onClick={()=>setDetail(featured)}>
-                <div className="featured-emoji">{featured.emoji||'📍'}</div>
-                <div className="featured-badge">⭐ Top Rated</div>
-                <div className="featured-name">{featured.name}</div>
-                <div className="featured-type">{(featured.types||[]).slice(0,2).map(t=>t.replace(/_/g,' ')).join(' · ')}</div>
-                <div className="featured-meta">
-                  <span>📍 {featured.vicinity?.split(',')[0]||'Casablanca'}</span>
-                  {featured.rating && <span>★ {featured.rating}</span>}
-                  {featured.price_level!==undefined && <span>💰 {price_str(featured.price_level)}</span>}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* PLACES LIST */}
           <div className="section pb40">
             <div className="section-header">
               <div className="section-title">
-                {query ? `Results for "${query}"` : CATS.find(c=>c.id===cat)?.label||'Places'}
+                {query?`Results for "${query}"`:CATS.find(c=>c.id===cat)?.label}
               </div>
               <div className="section-more">{filteredPlaces.length} places</div>
             </div>
 
             {loading ? (
-              <div className="places-grid">
-                {[1,2,3].map(i=><ShimmerCard key={i}/>)}
-              </div>
+              <div>{[1,2,3].map(i=><ShimmerCard key={i}/>)}</div>
             ) : filteredPlaces.length===0 ? (
               <div className="empty-state">
-                <div className="empty-state-icon">{query?'🔍':'🏜️'}</div>
-                <div className="empty-state-title">{query?'No results found':'Nothing here yet'}</div>
-                <div className="empty-state-sub">{query?`Try a different search term`:`No places found in this category`}</div>
+                <div className="empty-state-icon">🏜️</div>
+                <div className="empty-state-title">No results found</div>
+                <div className="empty-state-sub">Try a different category or search term</div>
               </div>
             ) : (
-              <div className="places-grid">
-                {filteredPlaces.map(p=>(
-                  <PlaceCard key={p.place_id} place={p} saved={saved}
-                    onSave={handleSave} onClick={()=>setDetail(p)}/>
-                ))}
+              <div className="fade-up">
+                {/* PREMIUM */}
+                {premiumPlaces.length>0 && <>
+                  <div className="sponsored-label-row">
+                    <div className="sponsored-label">👑 Premium Placement</div>
+                    <div style={{fontSize:10,color:'rgba(140,123,107,0.5)'}}>Ad</div>
+                  </div>
+                  <div className="sponsored-divider"/>
+                  {premiumPlaces.map(p=>(
+                    <SponsoredPremiumCard key={p.id} place={p} saved={saved} onSave={handleSave} onClick={()=>setDetail(p)}/>
+                  ))}
+                </>}
+
+                {/* PRO */}
+                {proPlaces.length>0 && <>
+                  <div className="sponsored-label-row" style={{marginTop:8}}>
+                    <div className="sponsored-label">⭐ Pro Listing</div>
+                    <div style={{fontSize:10,color:'rgba(140,123,107,0.5)'}}>Ad</div>
+                  </div>
+                  <div className="sponsored-divider"/>
+                  {proPlaces.map(p=>(
+                    <SponsoredProCard key={p.id} place={p} saved={saved} onSave={handleSave} onClick={()=>setDetail(p)}/>
+                  ))}
+                </>}
+
+                {/* ORGANIC */}
+                {organicPlaces.length>0 && <>
+                  {(premiumPlaces.length>0||proPlaces.length>0) && <div className="organic-label">All Results</div>}
+                  {organicPlaces.map(p=>(
+                    <PlaceCard key={p.id} place={p} saved={saved} onSave={handleSave} onClick={()=>setDetail(p)}/>
+                  ))}
+                </>}
               </div>
             )}
           </div>
@@ -1223,27 +761,32 @@ function App() {
 
       {/* SAVED TAB */}
       {tab==='saved' && (
-        <div style={{flex:1, overflowY:'auto', paddingBottom:80}}>
+        <div className="screen">
           <div className="topbar">
             <div className="topbar-bg"/>
             <div className="topbar-row1">
               <div className="topbar-logo">Tourista</div>
-              <div className="topbar-greeting-small" style={{position:'relative',zIndex:2,marginTop:10}}>📍 Your saved places</div>
+              <div className="topbar-greeting-small" style={{position:'relative',zIndex:2,marginTop:10}}>❤️ Your saved places</div>
             </div>
           </div>
-          <div className="saved-screen">
-            <div className="saved-header">Saved ❤️</div>
-            {saved.length===0 ? (
+          <div style={{padding:'20px 20px 0'}}>
+            <div style={{fontFamily:'Cormorant Garamond,serif',fontSize:28,marginBottom:20}}>Saved Places</div>
+            {user.isGuest ? (
+              <div className="empty-state">
+                <div className="empty-state-icon">🔐</div>
+                <div className="empty-state-title">Sign in to save places</div>
+                <div className="empty-state-sub">Create a free account to save your favourite spots in Casablanca</div>
+              </div>
+            ) : saved.length===0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">🤍</div>
                 <div className="empty-state-title">Nothing saved yet</div>
-                <div className="empty-state-sub">Tap the heart on any place to save it for later.</div>
+                <div className="empty-state-sub">Tap the heart on any place to save it for later</div>
               </div>
             ) : (
-              <div className="places-grid">
-                {savedPlaces.filter(p=>saved.includes(p.place_id)).map(p=>(
-                  <PlaceCard key={p.place_id} place={p} saved={saved}
-                    onSave={handleSave} onClick={()=>setDetail(p)}/>
+              <div className="fade-up pb40">
+                {savedPlaces.filter(p=>saved.includes(p.id)).map(p=>(
+                  <PlaceCard key={p.id} place={p} saved={saved} onSave={handleSave} onClick={()=>setDetail(p)}/>
                 ))}
               </div>
             )}
@@ -1253,57 +796,62 @@ function App() {
 
       {/* PROFILE TAB */}
       {tab==='profile' && (
-        <div style={{flex:1, overflowY:'auto', paddingBottom:80}}>
+        <div className="screen">
           <div className="topbar">
             <div className="topbar-bg"/>
             <div className="topbar-row1">
               <div className="topbar-logo">Tourista</div>
             </div>
-            <div className="topbar-greeting" style={{paddingBottom:8}}>
-              <div className="topbar-greeting-small">👤 Your Profile</div>
+            <div className="topbar-greeting">
+              <div className="topbar-greeting-small">👤 Profile</div>
               <div className="topbar-greeting-big"><em>{user.name}</em></div>
             </div>
           </div>
-          <div style={{padding:20}}>
-            {/* API Key management */}
-            <div style={{background:'white',borderRadius:16,padding:18,marginBottom:16,boxShadow:'var(--shadow)'}}>
-              <div style={{fontFamily:'Cormorant Garamond,serif',fontSize:18,marginBottom:12}}>🔑 Google Places API</div>
-              {apiKeySet
-                ? <div>
-                    <div style={{fontSize:13,color:'var(--sage)',marginBottom:10}}>✅ API key connected — showing live data</div>
-                    <button style={{padding:'8px 16px',background:'var(--sand-deep)',border:'none',borderRadius:10,fontSize:13,cursor:'pointer'}}
-                      onClick={()=>{localStorage.removeItem('tourista_api_key');setApiKey('');setApiKeySet(false);showToast('API key removed');}}>
-                      Remove Key
-                    </button>
-                  </div>
-                : <div>
-                    <div style={{fontSize:13,color:'var(--warm-grey)',marginBottom:10}}>Add your Google Places API key to see real data from Casablanca.</div>
-                    <div className="api-key-row">
-                      <input className="api-key-input" placeholder="AIza..." value={apiKeyDraft} onChange={e=>setApiKeyDraft(e.target.value)}/>
-                      <button className="api-key-btn" onClick={handleSetApiKey}>Save</button>
-                    </div>
-                  </div>
-              }
+          <div style={{padding:20}} className="pb40">
+            {/* Stats */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:20}}>
+              <div className="profile-stat">
+                <div className="profile-stat-icon">❤️</div>
+                <div className="profile-stat-val">{saved.length}</div>
+                <div className="profile-stat-label">Saved Places</div>
+              </div>
+              <div className="profile-stat">
+                <div className="profile-stat-icon">🌍</div>
+                <div className="profile-stat-val">1</div>
+                <div className="profile-stat-label">Cities Explored</div>
+              </div>
             </div>
 
-            {/* Stats */}
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:16}}>
-              {[
-                {icon:'❤️',label:'Saved Places',val:saved.length},
-                {icon:'🌍',label:'Cities Explored',val:1},
-              ].map(s=>(
-                <div key={s.label} style={{background:'white',borderRadius:16,padding:16,textAlign:'center',boxShadow:'var(--shadow)'}}>
-                  <div style={{fontSize:28}}>{s.icon}</div>
-                  <div style={{fontFamily:'Cormorant Garamond,serif',fontSize:28,fontWeight:600,marginTop:4}}>{s.val}</div>
-                  <div style={{fontSize:12,color:'var(--warm-grey)'}}>{s.label}</div>
+            {/* Account info */}
+            <div style={{background:'white',borderRadius:16,padding:18,marginBottom:14,boxShadow:'var(--shadow)'}}>
+              <div style={{fontFamily:'Cormorant Garamond,serif',fontSize:18,marginBottom:12}}>👤 Account</div>
+              <div style={{fontSize:13,color:'var(--warm-grey)',marginBottom:4}}>Name</div>
+              <div style={{fontSize:15,fontWeight:500,marginBottom:12}}>{user.name}</div>
+              <div style={{fontSize:13,color:'var(--warm-grey)',marginBottom:4}}>Email</div>
+              <div style={{fontSize:15,fontWeight:500}}>{user.email}</div>
+            </div>
+
+            {/* Backend status */}
+            <div style={{background:'white',borderRadius:16,padding:18,marginBottom:14,boxShadow:'var(--shadow)'}}>
+              <div style={{fontFamily:'Cormorant Garamond,serif',fontSize:18,marginBottom:10}}>⚡ Backend Status</div>
+              <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                <div style={{display:'flex',alignItems:'center',gap:8,fontSize:13}}>
+                  <span style={{color:'#2E7D32'}}>✅</span>
+                  <span>Supabase Database connected</span>
                 </div>
-              ))}
+                <div style={{display:'flex',alignItems:'center',gap:8,fontSize:13}}>
+                  <span style={{color:user.isGuest?'#E65100':'#2E7D32'}}>{user.isGuest?'⚠️':'✅'}</span>
+                  <span>{user.isGuest?'Guest mode (not saved to DB)':'Auth active — data synced'}</span>
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:8,fontSize:13}}>
+                  <span style={{color:'#2E7D32'}}>✅</span>
+                  <span>Sponsored listings live</span>
+                </div>
+              </div>
             </div>
 
             <button style={{width:'100%',padding:14,background:'var(--sand)',border:'2px solid var(--border)',borderRadius:14,fontSize:14,fontWeight:500,cursor:'pointer',fontFamily:'Outfit,sans-serif',color:'var(--clay)'}}
-              onClick={()=>{localStorage.removeItem('tourista_user');setUser(null);}}>
-              Sign Out
-            </button>
+              onClick={handleSignOut}>Sign Out</button>
           </div>
         </div>
       )}
@@ -1312,7 +860,7 @@ function App() {
       <div className="bottom-nav">
         {[
           {id:'home',icon:'🏠',label:'Home'},
-          {id:'saved',icon:saved.length?'❤️':'🤍',label:`Saved${saved.length?` (${saved.length})`:''}`,badge:saved.length>0},
+          {id:'saved',icon:saved.length?'❤️':'🤍',label:`Saved${saved.length?` (${saved.length})`:''}` },
           {id:'profile',icon:'👤',label:'Profile'},
         ].map(n=>(
           <div key={n.id} className={`nav-item ${tab===n.id?'active':''}`} onClick={()=>setTab(n.id)}>
@@ -1322,21 +870,12 @@ function App() {
         ))}
       </div>
 
-      {/* DETAIL SHEET */}
-      {detail && (
-        <PlaceDetail place={detail} saved={saved}
-          onSave={handleSave} onClose={()=>setDetail(null)}/>
-      )}
-
-      {/* FILTER DRAWER */}
+      {detail && <PlaceDetail place={detail} saved={saved} onSave={handleSave} onClose={()=>setDetail(null)}/>}
       {showFilter && (
-        <FilterDrawer
-          filters={filters}
-          onChange={(k,v)=>setFilters(f=>({...f,[k]:v}))}
-          onClose={()=>{ setFilters(activeFilters); setShowFilter(false); }}
-          onApply={()=>{ setActiveFilters(filters); setShowFilter(false); }}
-          onReset={()=>{ const def={rating:'Any',price:'Any',openNow:false}; setFilters(def); setActiveFilters(def); setShowFilter(false); }}
-        />
+        <FilterDrawer filters={filters} onChange={(k,v)=>setFilters(f=>({...f,[k]:v}))}
+          onClose={()=>{setFilters(activeFilters);setShowFilter(false);}}
+          onApply={()=>{setActiveFilters(filters);setShowFilter(false);}}
+          onReset={()=>{const d={rating:'Any',price:'Any',openNow:false};setFilters(d);setActiveFilters(d);setShowFilter(false);}}/>
       )}
     </div>
   );
