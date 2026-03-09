@@ -293,19 +293,29 @@ body{background:var(--ink);font-family:'Outfit',sans-serif;color:var(--ink);min-
         </div>
       </div>
       <div style="padding:20px">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+          <div id="profile-avatar" style="width:70px;height:70px;background:linear-gradient(135deg,var(--clay),var(--gold));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:white;flex-shrink:0">?</div>
+          <div>
+            <div id="profile-name-big" style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600">Explorer</div>
+            <div id="profile-email-display" style="font-size:13px;color:var(--warm-grey)"></div>
+            <div id="auth-status" style="font-size:12px;color:var(--clay);margin-top:2px">✅ Signed in</div>
+          </div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
           <div class="stat-card"><div style="font-size:28px">❤️</div><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600" id="stat-saved">0</div><div style="font-size:12px;color:var(--warm-grey)">Saved Places</div></div>
           <div class="stat-card"><div style="font-size:28px">🌍</div><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600">1</div><div style="font-size:12px;color:var(--warm-grey)">Cities Explored</div></div>
         </div>
         <div style="background:white;border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow)">
-          <div style="font-family:'Cormorant Garamond',serif;font-size:18px;margin-bottom:12px">⚡ Backend Status</div>
-          <div style="font-size:13px;display:flex;flex-direction:column;gap:8px">
-            <div>✅ Supabase connected</div>
-            <div id="auth-status">✅ Signed in</div>
-            <div>✅ Sponsored listings active</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:18px;margin-bottom:14px">✏️ Edit Profile</div>
+          <div style="font-size:12px;color:var(--warm-grey);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Display Name</div>
+          <div style="display:flex;gap:10px">
+            <input id="edit-name-inp" type="text" placeholder="Your name" style="flex:1;padding:11px 14px;border:2px solid var(--border);border-radius:12px;font-size:14px;font-family:'Outfit',sans-serif;outline:none;color:var(--ink)">
+            <button onclick="saveName()" style="padding:11px 18px;background:var(--clay);color:white;border:none;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap">Save</button>
           </div>
+          <div id="name-save-msg" style="font-size:12px;color:#2E7D32;margin-top:8px;display:none">✅ Name updated!</div>
         </div>
-        <button onclick="confirmSignOut()" style="width:100%;padding:14px;background:var(--sand);border:2px solid var(--border);border-radius:14px;font-size:14px;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif;color:var(--clay)">Sign Out</button>
+        <button onclick="confirmSignOut()" style="width:100%;padding:14px;background:var(--sand);border:2px solid var(--border);border-radius:14px;font-size:14px;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif;color:var(--clay);margin-bottom:10px">Sign Out</button>
+        <button onclick="confirmDeleteAccount()" style="width:100%;padding:14px;background:white;border:2px solid #FDECEA;border-radius:14px;font-size:14px;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif;color:#C62828">🗑️ Delete Account</button>
       </div>
     </div>
 
@@ -481,14 +491,15 @@ function handleGuest(){
 
 function loginUser(user){
   currentUser=user;
-  document.getElementById('greeting-name').textContent=user.name.split(' ')[0];
-  document.getElementById('profile-name').textContent=user.name;
-  document.getElementById('profile-name-big').textContent=user.name;
-  document.getElementById('profile-avatar').textContent=user.name[0].toUpperCase();
-  document.getElementById('profile-email-display').textContent=user.isGuest?'Guest mode':user.email;
-  document.getElementById('edit-name-inp').value=user.isGuest?'':user.name;
-  document.getElementById('avatar-btn').textContent=user.name[0].toUpperCase();
-  document.getElementById('auth-status').textContent=user.isGuest?'⚠️ Guest mode':'✅ Signed in — data synced';
+  const setEl = (id, val, prop='textContent') => { const el=document.getElementById(id); if(el) el[prop]=val; };
+  setEl('greeting-name', user.name.split(' ')[0]);
+  setEl('profile-name', user.name);
+  setEl('profile-name-big', user.name);
+  setEl('profile-avatar', user.name[0].toUpperCase());
+  setEl('profile-email-display', user.isGuest?'Guest mode':user.email);
+  setEl('edit-name-inp', user.isGuest?'':user.name, 'value');
+  setEl('avatar-btn', user.name[0].toUpperCase());
+  setEl('auth-status', user.isGuest?'⚠️ Guest mode':'✅ Signed in — data synced');
   showScreen('main-screen');
   buildCats();
   loadPlaces();
