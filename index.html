@@ -583,16 +583,44 @@ let googleService = null;
 let googleMap = null;
 
 function initGooglePlaces(){
-  // Create hidden map for Places service
-  const mapDiv = document.createElement('div');
-  mapDiv.style.display = 'none';
-  document.body.appendChild(mapDiv);
-  googleMap = new google.maps.Map(mapDiv, {center:CASA, zoom:13});
-  googleService = new google.maps.places.PlacesService(googleMap);
-  console.log('✅ Google Places ready');
-  // Reload current tab with real data
-  loadPlaces();
+  try {
+    const mapDiv = document.createElement('div');
+    mapDiv.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none';
+    document.body.appendChild(mapDiv);
+    googleMap = new google.maps.Map(mapDiv, {center:CASA, zoom:13});
+    googleService = new google.maps.places.PlacesService(googleMap);
+    console.log('✅ Google Places SDK ready!');
+    // Show indicator
+    const ind = document.createElement('div');
+    ind.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#2E7D32;color:white;padding:8px 16px;border-radius:20px;font-size:12px;z-index:100;animation:fadeIn 0.3s';
+    ind.textContent = '✅ Live data from Google Maps';
+    document.body.appendChild(ind);
+    setTimeout(()=>ind.remove(), 3000);
+    loadPlaces();
+  } catch(e) {
+    console.error('Google Places init error:', e);
+    loadMockPlaces();
+  }
 }
+
+// Fallback: if Google Maps doesn't load in 5 seconds, use mock data
+setTimeout(()=>{
+  if(!googleService){
+    console.log('Google Maps timeout - using mock data');
+    loadMockPlaces();
+  }
+}, 5000);
+
+// Catch Google Maps auth errors (wrong key, billing not enabled etc)
+window.gm_authFailure = function(){
+  console.error('Google Maps auth failed!');
+  const ind = document.createElement('div');
+  ind.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#C62828;color:white;padding:8px 16px;border-radius:20px;font-size:12px;z-index:100';
+  ind.textContent = '⚠️ Google Maps auth failed - using sample data';
+  document.body.appendChild(ind);
+  setTimeout(()=>ind.remove(), 5000);
+  loadMockPlaces();
+};
 
 const CAT_TO_GOOGLE = {
   restaurant:'restaurant', tourist_attraction:'tourist_attraction',
@@ -611,6 +639,8 @@ function getPhotoUrl(photo){
 function loadPlaces(){
   const list=document.getElementById('places-list');
   list.innerHTML=['','',''].map(()=>`<div class="shimmer-card"><div class="shimmer-img-el shimmer"></div><div class="shimmer-info"><div class="shimmer-line shimmer" style="width:70%"></div><div class="shimmer-line shimmer" style="width:50%"></div><div class="shimmer-line shimmer" style="width:90%"></div></div></div>`).join('');
+
+  if(!googleService){ loadMockPlaces(); return; }
 
   if(googleService){
     const type = CAT_TO_GOOGLE[currentCat]||'establishment';
