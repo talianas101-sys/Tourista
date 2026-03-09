@@ -7,22 +7,21 @@
   "background_color": "#1C1208",
   "theme_color": "#C4602A",
   "orientation": "portrait",
+  "categories": ["travel", "lifestyle"],
+  "lang": "en",
+  "scope": "/",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%23C4602A'/><text y='130' x='50%' text-anchor='middle' font-size='110'>🧭</text></svg>",
+      "src": "icon-192.svg",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%23C4602A'/><text y='360' x='50%' text-anchor='middle' font-size='300'>🧭</text></svg>",
+      "src": "icon-512.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }
-  ],
-  "categories": ["travel", "lifestyle"],
-  "lang": "en",
-  "dir": "ltr",
-  "scope": "/"
+  ]
 }
